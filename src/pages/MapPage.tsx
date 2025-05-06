@@ -15,7 +15,7 @@ const MapPage: React.FC = () => {
   return (
     <AppLayout>
       <div className="relative h-screen">
-        <div className="overlay-container">
+        <div className="absolute top-0 left-0 right-0 z-10 p-4">
           <SearchAndFilter />
           
           <Button
@@ -29,7 +29,9 @@ const MapPage: React.FC = () => {
           </Button>
         </div>
         
-        <GoogleMap apiKey="AIzaSyAy71IIAH6wSCX4heLACwywNPzueSpCvk0" />
+        <div className="absolute top-0 left-0 right-0 bottom-0">
+          <GoogleMap apiKey="AIzaSyAy71IIAH6wSCX4heLACwywNPzueSpCvk0" />
+        </div>
         
         {/* List view */}
         {showListView && (

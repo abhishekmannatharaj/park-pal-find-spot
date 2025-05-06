@@ -55,6 +55,7 @@ const AddNewSpot: React.FC = () => {
   const [location, setLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [address, setAddress] = useState('');
   const [hourlyPrice, setHourlyPrice] = useState('');
   const [monthlyPrice, setMonthlyPrice] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -100,11 +101,20 @@ const AddNewSpot: React.FC = () => {
       // Request camera permission
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       
-      // For demo purposes, we'll just use placeholder images
-      // In a real app, we would take an actual photo using the camera stream
+      // For demo purposes, we'll use random placeholder images
+      const placeholderImages = [
+        'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?q=80&w=400',
+        'https://images.unsplash.com/photo-1617347454431-f49d7ff5c3b1?q=80&w=400',
+        'https://images.unsplash.com/photo-1611192052550-32918395b8c6?q=80&w=400',
+        'https://images.unsplash.com/photo-1611866272825-b9eb96304297?q=80&w=400',
+        'https://images.unsplash.com/photo-1470224114660-3f6686c562eb?q=80&w=400'
+      ];
+      
+      const randomImage = placeholderImages[Math.floor(Math.random() * placeholderImages.length)];
+      
       const newPhoto = {
         id: `photo-${Date.now()}`,
-        src: '/placeholder.svg'
+        src: randomImage
       };
       
       setPhotos(prev => [...prev, newPhoto]);
@@ -129,7 +139,7 @@ const AddNewSpot: React.FC = () => {
     if (step < 3) {
       // Validate current step
       if (step === 1) {
-        if (!name || !description || !hourlyPrice || !monthlyPrice || vehicleTypes.length === 0) {
+        if (!name || !description || !hourlyPrice || vehicleTypes.length === 0) {
           toast.error("Please fill all required fields");
           return;
         }
@@ -142,7 +152,7 @@ const AddNewSpot: React.FC = () => {
           return;
         }
       } else if (step === 2) {
-        if (!startDate || !endDate || !startTime || !endTime || !location) {
+        if (!startDate || !endDate || !startTime || !endTime || !location || !address) {
           toast.error("Please fill all required fields");
           return;
         }
@@ -169,14 +179,21 @@ const AddNewSpot: React.FC = () => {
     const startDateTime = new Date(`${startDate}T${startTime}`);
     const endDateTime = new Date(`${endDate}T${endTime}`);
     
+    // Create price object conditionally
+    const price: { hourly: number; monthly?: number } = {
+      hourly: parseFloat(hourlyPrice)
+    };
+    
+    if (monthlyPrice) {
+      price.monthly = parseFloat(monthlyPrice);
+    }
+    
     addNewSpot({
       name,
       description,
+      address,
       location: location || { lat: 12.9716, lng: 77.5946 },
-      price: {
-        hourly: parseFloat(hourlyPrice),
-        monthly: parseFloat(monthlyPrice),
-      },
+      price,
       rating: 0,
       vehicleTypes,
       images: photos.map(photo => photo.src),
@@ -190,6 +207,7 @@ const AddNewSpot: React.FC = () => {
     // Reset form
     setName('');
     setDescription('');
+    setAddress('');
     setHourlyPrice('');
     setMonthlyPrice('');
     setStartDate('');
@@ -289,7 +307,7 @@ const AddNewSpot: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="monthlyPrice">Monthly Price (₹)</Label>
+                  <Label htmlFor="monthlyPrice">Monthly Price (₹) (Optional)</Label>
                   <Input
                     id="monthlyPrice"
                     type="number"
@@ -298,7 +316,6 @@ const AddNewSpot: React.FC = () => {
                     value={monthlyPrice}
                     onChange={(e) => setMonthlyPrice(e.target.value)}
                     placeholder="e.g. 3000"
-                    required
                   />
                 </div>
               </div>
@@ -347,6 +364,34 @@ const AddNewSpot: React.FC = () => {
                       Sedan
                     </label>
                   </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="hatchback"
+                      checked={vehicleTypes.includes('hatchback')}
+                      onCheckedChange={() => handleVehicleTypeChange('hatchback')}
+                    />
+                    <label
+                      htmlFor="hatchback"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Hatchback
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="suv"
+                      checked={vehicleTypes.includes('suv')}
+                      onCheckedChange={() => handleVehicleTypeChange('suv')}
+                    />
+                    <label
+                      htmlFor="suv"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      SUV
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
@@ -354,6 +399,18 @@ const AddNewSpot: React.FC = () => {
           
           {step === 2 && (
             <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="address">Complete Address</Label>
+                <Textarea
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Enter the complete address of the parking spot"
+                  required
+                  className="min-h-[80px]"
+                />
+              </div>
+              
               <div className="space-y-2">
                 <Label>Location (Select on map)</Label>
                 <div className="h-[300px] rounded-md overflow-hidden border">

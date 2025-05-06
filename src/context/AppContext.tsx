@@ -3,7 +3,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { toast } from 'sonner';
 
 // Types
-export type VehicleType = 'car' | 'bike' | 'sedan';
+export type VehicleType = 'car' | 'bike' | 'sedan' | 'hatchback' | 'suv';
 
 export type BookingStatus = 'pending' | 'approved' | 'rejected' | 'completed';
 
@@ -15,9 +15,10 @@ export interface ParkingSpot {
     lat: number;
     lng: number;
   };
+  address?: string; // Added address field
   price: {
     hourly: number;
-    monthly: number;
+    monthly?: number; // Made monthly optional
   };
   rating: number;
   vehicleTypes: VehicleType[];
@@ -63,6 +64,8 @@ interface AppContextType {
   uploadVerificationDoc: (file: File) => void;
   showListView: boolean;
   toggleListView: () => void;
+  mySpots: ParkingSpot[];
+  deleteSpot: (spotId: string) => void;
 }
 
 // Dummy data for parking spots in Bangalore
@@ -76,13 +79,18 @@ const generateDummyParkingSpots = (): ParkingSpot[] => {
         lat: 12.9757,
         lng: 77.6097
       },
+      address: '1, MG Road, Bengaluru, Karnataka 560001',
       price: {
         hourly: 40,
         monthly: 3000
       },
       rating: 4.5,
       vehicleTypes: ['car', 'bike'],
-      images: ['/placeholder.svg', '/placeholder.svg', '/placeholder.svg'],
+      images: [
+        'https://images.unsplash.com/photo-1604063165585-e17e9c3c3f0b?q=80&w=400',
+        'https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?q=80&w=400',
+        'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?q=80&w=400'
+      ],
       availability: {
         startDate: new Date(),
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
@@ -98,13 +106,17 @@ const generateDummyParkingSpots = (): ParkingSpot[] => {
         lat: 12.9784,
         lng: 77.6408
       },
+      address: '100 Feet Road, Indiranagar, Bengaluru, Karnataka 560038',
       price: {
-        hourly: 50,
-        monthly: 3500
+        hourly: 50
       },
       rating: 4.2,
-      vehicleTypes: ['car', 'sedan'],
-      images: ['/placeholder.svg', '/placeholder.svg', '/placeholder.svg'],
+      vehicleTypes: ['car', 'sedan', 'suv'],
+      images: [
+        'https://images.unsplash.com/photo-1621929747188-0b4dc28498d2?q=80&w=400',
+        'https://images.unsplash.com/photo-1470224114660-3f6686c562eb?q=80&w=400',
+        'https://images.unsplash.com/photo-1617347454431-f49d7ff5c3b1?q=80&w=400'
+      ],
       availability: {
         startDate: new Date(),
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
@@ -120,13 +132,18 @@ const generateDummyParkingSpots = (): ParkingSpot[] => {
         lat: 12.9340,
         lng: 77.6156
       },
+      address: 'Koramangala 4th Block, Bengaluru, Karnataka 560034',
       price: {
         hourly: 60,
         monthly: 4000
       },
       rating: 4.8,
-      vehicleTypes: ['car', 'sedan', 'bike'],
-      images: ['/placeholder.svg', '/placeholder.svg', '/placeholder.svg'],
+      vehicleTypes: ['car', 'sedan', 'bike', 'hatchback'],
+      images: [
+        'https://images.unsplash.com/photo-1553413077-190dd305871c?q=80&w=400',
+        'https://images.unsplash.com/photo-1611192052550-32918395b8c6?q=80&w=400',
+        'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?q=80&w=400'
+      ],
       availability: {
         startDate: new Date(),
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
@@ -142,13 +159,17 @@ const generateDummyParkingSpots = (): ParkingSpot[] => {
         lat: 12.9699,
         lng: 77.7502
       },
+      address: 'Whitefield, ITPB, Bengaluru, Karnataka 560066',
       price: {
-        hourly: 30,
-        monthly: 2500
+        hourly: 30
       },
       rating: 3.9,
-      vehicleTypes: ['car', 'bike'],
-      images: ['/placeholder.svg', '/placeholder.svg', '/placeholder.svg'],
+      vehicleTypes: ['car', 'bike', 'suv'],
+      images: [
+        'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?q=80&w=400',
+        'https://images.unsplash.com/photo-1617347454431-f49d7ff5c3b1?q=80&w=400',
+        'https://images.unsplash.com/photo-1611192052550-32918395b8c6?q=80&w=400'
+      ],
       availability: {
         startDate: new Date(),
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
@@ -164,13 +185,18 @@ const generateDummyParkingSpots = (): ParkingSpot[] => {
         lat: 12.9081,
         lng: 77.6476
       },
+      address: 'HSR Layout Sector 2, Bengaluru, Karnataka 560102',
       price: {
         hourly: 45,
         monthly: 3200
       },
       rating: 4.3,
-      vehicleTypes: ['car', 'sedan'],
-      images: ['/placeholder.svg', '/placeholder.svg', '/placeholder.svg'],
+      vehicleTypes: ['car', 'sedan', 'hatchback'],
+      images: [
+        'https://images.unsplash.com/photo-1611866272825-b9eb96304297?q=80&w=400',
+        'https://images.unsplash.com/photo-1611192052550-32918395b8c6?q=80&w=400',
+        'https://images.unsplash.com/photo-1470224114660-3f6686c562eb?q=80&w=400'
+      ],
       availability: {
         startDate: new Date(),
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
@@ -221,6 +247,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return true;
   });
+
+  // Get my spots (owned by current user)
+  const mySpots = parkingSpots.filter(spot => spot.ownerId === '1');
 
   // Update filters
   const updateFilters = (key: string, value: any) => {
@@ -318,6 +347,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toast.success("New parking spot added successfully!");
   };
 
+  // Delete a spot
+  const deleteSpot = (spotId: string) => {
+    setParkingSpots(prev => prev.filter(spot => spot.id !== spotId));
+    toast.success("Parking spot deleted successfully!");
+  };
+
   // Upload verification document
   const uploadVerificationDoc = (file: File) => {
     // Simulate uploading
@@ -340,7 +375,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addNewSpot,
       uploadVerificationDoc,
       showListView,
-      toggleListView
+      toggleListView,
+      mySpots,
+      deleteSpot
     }}>
       {children}
     </AppContext.Provider>

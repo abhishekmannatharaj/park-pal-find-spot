@@ -30,10 +30,13 @@ import {
   MapPin
 } from "lucide-react";
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { cn, formatCurrency } from '@/lib/utils';
 
 const SpotDetail: React.FC = () => {
   const { selectedSpot, setSelectedSpot, bookSpot } = useApp();
+  const { user } = useAuth();
+  const isSpaceOwner = user?.role === 'space_owner';
   const [isBooking, setIsBooking] = useState(false);
   
   // Booking form state
@@ -111,6 +114,21 @@ const SpotDetail: React.FC = () => {
     }
   };
 
+  const getVehicleTypeIcon = (type: string) => {
+    switch (type) {
+      case 'car':
+        return <Car size={14} className="mr-1" />;
+      case 'bike':
+        return <Bike size={14} className="mr-1" />;
+      case 'sedan':
+      case 'hatchback':
+      case 'suv':
+        return <Car size={14} className="mr-1" />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <Dialog 
       open={!!selectedSpot} 
@@ -157,30 +175,22 @@ const SpotDetail: React.FC = () => {
           
           <p className="text-sm text-gray-600">{selectedSpot.description}</p>
           
+          {selectedSpot.address && (
+            <p className="text-sm text-gray-600">{selectedSpot.address}</p>
+          )}
+          
           <div className="flex items-center text-sm text-gray-600">
             <MapPin size={16} className="mr-1" />
             <span>About {(Math.random() * 3 + 0.5).toFixed(1)} km away</span>
           </div>
           
           <div className="flex flex-wrap gap-2">
-            {selectedSpot.vehicleTypes.includes('car') && (
-              <div className="bg-gray-100 rounded-full px-3 py-1 text-xs flex items-center">
-                <Car size={14} className="mr-1" />
-                Car
+            {selectedSpot.vehicleTypes.map((type) => (
+              <div key={type} className="bg-gray-100 rounded-full px-3 py-1 text-xs flex items-center">
+                {getVehicleTypeIcon(type)}
+                {type.charAt(0).toUpperCase() + type.slice(1)}
               </div>
-            )}
-            {selectedSpot.vehicleTypes.includes('bike') && (
-              <div className="bg-gray-100 rounded-full px-3 py-1 text-xs flex items-center">
-                <Bike size={14} className="mr-1" />
-                Bike
-              </div>
-            )}
-            {selectedSpot.vehicleTypes.includes('sedan') && (
-              <div className="bg-gray-100 rounded-full px-3 py-1 text-xs flex items-center">
-                <Car size={14} className="mr-1" />
-                Sedan
-              </div>
-            )}
+            ))}
           </div>
           
           <div className="flex items-center justify-between border-t border-b py-3 mt-3">
@@ -188,15 +198,17 @@ const SpotDetail: React.FC = () => {
               <p className="font-semibold">{formatCurrency(selectedSpot.price.hourly)}</p>
               <p className="text-xs text-gray-500">Per hour</p>
             </div>
-            <div>
-              <p className="font-semibold">{formatCurrency(selectedSpot.price.monthly)}</p>
-              <p className="text-xs text-gray-500">Per month</p>
-            </div>
+            {selectedSpot.price.monthly && (
+              <div>
+                <p className="font-semibold">{formatCurrency(selectedSpot.price.monthly)}</p>
+                <p className="text-xs text-gray-500">Per month</p>
+              </div>
+            )}
           </div>
         </div>
         
         {/* Booking Form */}
-        {isBooking && (
+        {isBooking && !isSpaceOwner && (
           <Card className="animate-fade-in">
             <CardContent className="p-4 space-y-4">
               <h3 className="font-medium">Book this spot</h3>
@@ -270,13 +282,15 @@ const SpotDetail: React.FC = () => {
           >
             Get Directions
           </Button>
-          <Button 
-            className="flex-1 bg-primary hover:bg-primary/90"
-            onClick={handleBookNow}
-            disabled={isBooking && (!startDate || !startTime || !endDate || !endTime || totalCost === 0)}
-          >
-            {isBooking ? 'Confirm Booking' : 'Book Now'}
-          </Button>
+          {!isSpaceOwner && (
+            <Button 
+              className="flex-1 bg-primary hover:bg-primary/90"
+              onClick={handleBookNow}
+              disabled={isBooking && (!startDate || !startTime || !endDate || !endTime || totalCost === 0)}
+            >
+              {isBooking ? 'Confirm Booking' : 'Book Now'}
+            </Button>
+          )}
         </CardFooter>
       </DialogContent>
     </Dialog>

@@ -18,13 +18,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
 import { useAuth, UserRole } from '@/context/AuthContext';
-import { Upload, LogOut } from 'lucide-react';
+import { Upload, LogOut, Trash } from 'lucide-react';
 
 const ProfilePage: React.FC = () => {
   const { user, logout, switchRole } = useAuth();
   const [isVehicleOwner, setIsVehicleOwner] = useState(user?.role === 'vehicle_owner');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
+  const [uploadedDocument, setUploadedDocument] = useState<File | null>(null);
+  const [documentPreview, setDocumentPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const handleRoleChange = (checked: boolean) => {
@@ -48,10 +50,25 @@ const ProfilePage: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In a real app, we would upload the file to a server
-      toast.success('Document uploaded successfully. Verification in progress.');
-      setShowVerificationDialog(false);
+      setUploadedDocument(file);
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setDocumentPreview(previewUrl);
     }
+  };
+
+  const handleDeleteDocument = () => {
+    setUploadedDocument(null);
+    if (documentPreview) {
+      URL.revokeObjectURL(documentPreview);
+      setDocumentPreview(null);
+    }
+  };
+
+  const handleSubmitDocument = () => {
+    toast.success('Document uploaded successfully! We will verify it shortly.');
+    setShowVerificationDialog(false);
+    // In a real app, we would upload the file to a server
   };
 
   return (
@@ -62,7 +79,7 @@ const ProfilePage: React.FC = () => {
         </CardHeader>
         <CardContent className="flex flex-col items-center space-y-4">
           <Avatar className="h-24 w-24">
-            <AvatarImage src="/placeholder.svg" alt={user?.name || "User"} />
+            <AvatarImage src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150" alt={user?.name || "User"} />
             <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
           </Avatar>
           
@@ -158,25 +175,51 @@ const ProfilePage: React.FC = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4">
-            <Button 
-              variant="outline" 
-              className="w-full h-32 flex flex-col items-center justify-center border-dashed"
-              onClick={handleUploadClick}
-            >
-              <Upload size={24} className="mb-2" />
-              <span>Click to upload document</span>
-              <span className="text-xs text-gray-500 mt-1">JPG, PNG or PDF</span>
-              <input 
-                type="file" 
-                ref={fileInputRef}
-                className="hidden" 
-                accept="image/jpeg,image/png,application/pdf"
-                onChange={handleFileChange}
-              />
-            </Button>
+            {documentPreview ? (
+              <div className="relative">
+                <img 
+                  src={documentPreview} 
+                  alt="Document Preview"
+                  className="w-full h-48 object-contain border rounded-md"
+                />
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  className="absolute top-2 right-2 p-1 h-8 w-8"
+                  onClick={handleDeleteDocument}
+                >
+                  <Trash size={16} />
+                </Button>
+                <p className="mt-2 text-sm text-center text-gray-500">
+                  {uploadedDocument?.name} ({Math.round((uploadedDocument?.size || 0) / 1024)} KB)
+                </p>
+              </div>
+            ) : (
+              <Button 
+                variant="outline" 
+                className="w-full h-32 flex flex-col items-center justify-center border-dashed"
+                onClick={handleUploadClick}
+              >
+                <Upload size={24} className="mb-2" />
+                <span>Click to upload document</span>
+                <span className="text-xs text-gray-500 mt-1">JPG, PNG or PDF</span>
+                <input 
+                  type="file" 
+                  ref={fileInputRef}
+                  className="hidden" 
+                  accept="image/jpeg,image/png,application/pdf"
+                  onChange={handleFileChange}
+                />
+              </Button>
+            )}
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
+            {documentPreview && (
+              <AlertDialogAction onClick={handleSubmitDocument}>
+                Submit for Verification
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

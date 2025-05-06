@@ -156,54 +156,67 @@ const MapComponent: React.FC<MapProps> = ({
       const newMarkers: google.maps.Marker[] = [];
 
       spots.forEach((spot) => {
-        // Create custom marker element
-        const markerElement = document.createElement('div');
-        markerElement.className = 'marker-container';
-        
-        // Add correct color based on status
-        let color;
+        // Get color based on status
+        let fillColor;
         switch (spot.status) {
           case 'available':
-            color = '#4CAF50'; // Green
+            fillColor = '#4CAF50'; // Green
             break;
           case 'soon':
-            color = '#FFD700'; // Yellow
+            fillColor = '#FFD700'; // Yellow
             break;
           case 'filling':
-            color = '#FF5252'; // Red
+            fillColor = '#FF5252'; // Red
             break;
           default:
-            color = '#757575'; // Gray
+            fillColor = '#757575'; // Gray
         }
         
-        markerElement.innerHTML = `<div style="width: 100%; height: 100%; background-color: ${color}; border-radius: 50%;"></div>`;
-
-        // Create custom marker
-        const marker = new google.maps.Marker({
-          position: spot.location,
+        // Create a circular marker
+        const spotMarker = new google.maps.Circle({
+          strokeColor: '#FFFFFF',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: fillColor,
+          fillOpacity: 0.7,
           map,
-          title: spot.name,
+          center: spot.location,
+          radius: 30, // Size of circle in meters
+          clickable: true
         });
 
-        // Add click listener
-        marker.addListener('click', () => {
+        // Add click listener to the circle
+        google.maps.event.addListener(spotMarker, 'click', () => {
           if (onSpotClick) {
             onSpotClick(spot);
           }
         });
 
-        newMarkers.push(marker);
+        // Add hover styles
+        google.maps.event.addListener(spotMarker, 'mouseover', () => {
+          spotMarker.setOptions({
+            fillOpacity: 0.9,
+            strokeWeight: 3
+          });
+        });
+
+        google.maps.event.addListener(spotMarker, 'mouseout', () => {
+          spotMarker.setOptions({
+            fillOpacity: 0.7,
+            strokeWeight: 2
+          });
+        });
       });
 
-      setMarkers(newMarkers);
+      return () => {
+        spots.forEach((spot) => {
+          markers.forEach((marker) => marker.setMap(null));
+        });
+      };
     }
-
-    return () => {
-      markers.forEach((marker) => marker.setMap(null));
-    };
   }, [map, spots, pickLocation, onSpotClick]);
 
-  return <div ref={ref} className="map-container" />;
+  return <div ref={ref} className="map-container h-full" />;
 };
 
 // Wrapper component for Google Maps
