@@ -30,6 +30,7 @@ const MapComponent: React.FC<MapProps> = ({
   const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
   const [pickedLocation, setPickedLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
+  const spotCirclesRef = useRef<google.maps.Circle[]>([]);
 
   // Initialize the map
   useEffect(() => {
@@ -148,13 +149,13 @@ const MapComponent: React.FC<MapProps> = ({
     };
   }, [map, pickLocation, center, onLocationPicked]);
 
-  // Add parking spot markers
+  // Add parking spot circles (instead of markers)
   useEffect(() => {
     if (map && spots.length > 0 && !pickLocation) {
-      // Clear existing markers
-      markers.forEach((marker) => marker.setMap(null));
-      const newMarkers: google.maps.Marker[] = [];
-
+      // Clear existing circles
+      spotCirclesRef.current.forEach(circle => circle.setMap(null));
+      spotCirclesRef.current = [];
+      
       spots.forEach((spot) => {
         // Get color based on status
         let fillColor;
@@ -172,8 +173,8 @@ const MapComponent: React.FC<MapProps> = ({
             fillColor = '#757575'; // Gray
         }
         
-        // Create a circular marker
-        const spotMarker = new google.maps.Circle({
+        // Create a larger circular zone
+        const spotCircle = new google.maps.Circle({
           strokeColor: '#FFFFFF',
           strokeOpacity: 0.8,
           strokeWeight: 2,
@@ -181,39 +182,41 @@ const MapComponent: React.FC<MapProps> = ({
           fillOpacity: 0.7,
           map,
           center: spot.location,
-          radius: 30, // Size of circle in meters
+          radius: 50, // Larger size (50 meters)
           clickable: true
         });
 
+        // Add to ref for cleanup
+        spotCirclesRef.current.push(spotCircle);
+
         // Add click listener to the circle
-        google.maps.event.addListener(spotMarker, 'click', () => {
+        google.maps.event.addListener(spotCircle, 'click', () => {
           if (onSpotClick) {
             onSpotClick(spot);
           }
         });
 
         // Add hover styles
-        google.maps.event.addListener(spotMarker, 'mouseover', () => {
-          spotMarker.setOptions({
+        google.maps.event.addListener(spotCircle, 'mouseover', () => {
+          spotCircle.setOptions({
             fillOpacity: 0.9,
             strokeWeight: 3
           });
         });
 
-        google.maps.event.addListener(spotMarker, 'mouseout', () => {
-          spotMarker.setOptions({
+        google.maps.event.addListener(spotCircle, 'mouseout', () => {
+          spotCircle.setOptions({
             fillOpacity: 0.7,
             strokeWeight: 2
           });
         });
       });
-
-      return () => {
-        spots.forEach((spot) => {
-          markers.forEach((marker) => marker.setMap(null));
-        });
-      };
     }
+
+    return () => {
+      // Clean up circles
+      spotCirclesRef.current.forEach(circle => circle.setMap(null));
+    };
   }, [map, spots, pickLocation, onSpotClick]);
 
   return <div ref={ref} className="map-container h-full" />;

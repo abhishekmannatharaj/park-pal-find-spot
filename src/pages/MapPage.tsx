@@ -15,7 +15,8 @@ const MapPage: React.FC = () => {
   return (
     <AppLayout>
       <div className="relative h-screen">
-        <div className="absolute top-0 left-0 right-0 z-10 p-4">
+        {/* Search and filter controls */}
+        <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-white/80 backdrop-blur-sm">
           <SearchAndFilter />
           
           <Button
@@ -29,6 +30,7 @@ const MapPage: React.FC = () => {
           </Button>
         </div>
         
+        {/* Google Map Component */}
         <div className="absolute top-0 left-0 right-0 bottom-0">
           <GoogleMap apiKey="AIzaSyAy71IIAH6wSCX4heLACwywNPzueSpCvk0" />
         </div>

@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import MapPage from "./pages/MapPage";
 import BookingsPage from "./pages/BookingsPage";
+import SpotsPage from "./pages/SpotsPage";
 import AddSpotPage from "./pages/AddSpotPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
@@ -46,6 +47,7 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute />}>
         <Route path="/map" element={<MapPage />} />
         <Route path="/bookings" element={<BookingsPage />} />
+        <Route path="/spots" element={<SpotsPage />} />
         <Route path="/add-spot" element={<AddSpotPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>

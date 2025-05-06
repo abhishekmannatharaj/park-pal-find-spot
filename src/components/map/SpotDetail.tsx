@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Dialog, 
@@ -207,7 +206,7 @@ const SpotDetail: React.FC = () => {
           </div>
         </div>
         
-        {/* Booking Form */}
+        {/* Booking Form - Only show for vehicle owners */}
         {isBooking && !isSpaceOwner && (
           <Card className="animate-fade-in">
             <CardContent className="p-4 space-y-4">
