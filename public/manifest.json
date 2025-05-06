@@ -1,0 +1,22 @@
+
+{
+  "name": "Nexlot - Parking Assistant",
+  "short_name": "Nexlot",
+  "description": "Real-time parking assistant app that connects vehicle owners with space owners",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0057D9",
+  "icons": [
+    {
+      "src": "/placeholder.svg",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/placeholder.svg",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
