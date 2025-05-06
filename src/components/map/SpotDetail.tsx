@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Dialog, 
@@ -133,7 +134,7 @@ const SpotDetail: React.FC = () => {
       open={!!selectedSpot} 
       onOpenChange={(open) => !open && setSelectedSpot(null)}
     >
-      <DialogContent className="max-w-md mx-auto">
+      <DialogContent className="max-w-md mx-auto max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">{selectedSpot.name}</DialogTitle>
         </DialogHeader>

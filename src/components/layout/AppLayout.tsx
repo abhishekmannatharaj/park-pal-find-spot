@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, BookOpen, Plus, User, List } from 'lucide-react';
+import { Home, BookOpen, List, User } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 interface AppLayoutProps {
@@ -20,7 +20,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const navItems = [
     { path: '/map', label: 'Home', icon: Home },
     { path: '/bookings', label: 'Bookings', icon: BookOpen },
-    ...(user?.role === 'space_owner' ? [{ path: '/add-spot', label: 'Add Spot', icon: Plus }] : []),
+    ...(user?.role === 'space_owner' ? [{ path: '/spots', label: 'Spots', icon: List }] : []),
     { path: '/profile', label: 'Profile', icon: User },
   ];
 
