@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import {
 import { useApp, VehicleType } from '@/context/AppContext';
 import GoogleMap from '@/components/map/GoogleMap';
 import { toast } from 'sonner';
-import { Trash, Camera } from 'lucide-react';
+import { Trash, Camera, Cctv } from 'lucide-react';
 
 // Mock AI analysis function
 const analyzeSpot = () => {
@@ -67,6 +67,11 @@ const AddNewSpot: React.FC = () => {
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [analysis, setAnalysis] = useState<any>(null);
   const [step, setStep] = useState(1);
+  const [hasCctv, setHasCctv] = useState(false);
+  const [hasLiveAccess, setHasLiveAccess] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   
   // Handle vehicle type selection
   const handleVehicleTypeChange = (type: VehicleType) => {
@@ -84,48 +89,89 @@ const AddNewSpot: React.FC = () => {
     setLocation(location);
   };
   
+  // Handle camera setup
+  const setupCamera = async () => {
+    try {
+      // Check if browser supports getUserMedia
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast.error("Your browser doesn't support camera access");
+        return false;
+      }
+      
+      // Request camera permission
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      
+      // Set the stream to the video element
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      
+      setCameraStream(stream);
+      return true;
+    } catch (error) {
+      console.error("Camera error:", error);
+      toast.error("Failed to access camera");
+      return false;
+    }
+  };
+  
+  // Release camera resources
+  const releaseCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+  };
+  
   // Handle photo capture
-  const handleTakePhoto = async () => {
+  const handleCapturePhoto = () => {
     if (photos.length >= 3) {
       toast.error("Maximum 3 photos allowed");
       return;
     }
     
-    try {
-      // Check if browser supports getUserMedia
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        toast.error("Your browser doesn't support camera access");
-        return;
+    if (!cameraStream) {
+      setupCamera().then(success => {
+        if (success) {
+          toast.info("Camera ready. Click 'Capture Photo' when ready.");
+        }
+      });
+      return;
+    }
+    
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      
+      // Set canvas dimensions to match video
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      // Draw the current video frame to the canvas
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convert canvas to data URL (image)
+        const photoDataUrl = canvas.toDataURL('image/jpeg');
+        
+        // Add to photos array
+        const newPhoto = {
+          id: `photo-${Date.now()}`,
+          src: photoDataUrl
+        };
+        
+        setPhotos(prev => [...prev, newPhoto]);
+        
+        toast.success("Photo captured!");
+        
+        // If we've reached 3 photos, release camera
+        if (photos.length >= 2) { // 2 + 1 new = 3 total
+          releaseCamera();
+        }
       }
-      
-      // Request camera permission
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      
-      // For demo purposes, we'll use random placeholder images
-      const placeholderImages = [
-        'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?q=80&w=400',
-        'https://images.unsplash.com/photo-1617347454431-f49d7ff5c3b1?q=80&w=400',
-        'https://images.unsplash.com/photo-1611192052550-32918395b8c6?q=80&w=400',
-        'https://images.unsplash.com/photo-1611866272825-b9eb96304297?q=80&w=400',
-        'https://images.unsplash.com/photo-1470224114660-3f6686c562eb?q=80&w=400'
-      ];
-      
-      const randomImage = placeholderImages[Math.floor(Math.random() * placeholderImages.length)];
-      
-      const newPhoto = {
-        id: `photo-${Date.now()}`,
-        src: randomImage
-      };
-      
-      setPhotos(prev => [...prev, newPhoto]);
-      
-      // Release camera resources
-      stream.getTracks().forEach(track => track.stop());
-      
-      toast.success("Photo captured!");
-    } catch (error) {
-      console.error("Camera error:", error);
-      toast.error("Failed to access camera");
     }
   };
   
@@ -133,6 +179,13 @@ const AddNewSpot: React.FC = () => {
   const handleDeletePhoto = (id: string) => {
     setPhotos(prev => prev.filter(photo => photo.id !== id));
   };
+  
+  // Clean up camera on unmount
+  useEffect(() => {
+    return () => {
+      releaseCamera();
+    };
+  }, []);
   
   // Handle form submission
   const handleSubmit = () => {
@@ -188,9 +241,15 @@ const AddNewSpot: React.FC = () => {
       price.monthly = parseFloat(monthlyPrice);
     }
     
+    // Add CCTV info to description if applicable
+    let fullDescription = description;
+    if (hasCctv) {
+      fullDescription += ` [CCTV equipped${hasLiveAccess ? ' with live access' : ''}]`;
+    }
+    
     addNewSpot({
       name,
-      description,
+      description: fullDescription,
       address,
       location: location || { lat: 12.9716, lng: 77.5946 },
       price,
@@ -220,6 +279,8 @@ const AddNewSpot: React.FC = () => {
     setStep(1);
     setShowAnalysis(false);
     setAnalysis(null);
+    setHasCctv(false);
+    setHasLiveAccess(false);
   };
   
   // Handle analyze
@@ -227,6 +288,19 @@ const AddNewSpot: React.FC = () => {
     const result = analyzeSpot();
     setAnalysis(result);
     setShowAnalysis(true);
+  };
+  
+  // Handle manual review
+  const handleManualReview = () => {
+    toast.success("Applied for manual analysis");
+    // In a real app, this would send a request for manual review
+  };
+  
+  const handleCctvChange = (checked: boolean) => {
+    setHasCctv(checked);
+    if (!checked) {
+      setHasLiveAccess(false);
+    }
   };
   
   return (
@@ -318,6 +392,44 @@ const AddNewSpot: React.FC = () => {
                     placeholder="e.g. 3000"
                   />
                 </div>
+              </div>
+              
+              <div className="space-y-2 border-t pt-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="cctv" 
+                    checked={hasCctv}
+                    onCheckedChange={handleCctvChange}
+                  />
+                  <label
+                    htmlFor="cctv"
+                    className="text-sm font-medium leading-none flex items-center"
+                  >
+                    <Cctv size={16} className="mr-1" />
+                    CCTV Available
+                  </label>
+                </div>
+                
+                {hasCctv && (
+                  <div className="pl-6 mt-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="liveAccess" 
+                        checked={hasLiveAccess}
+                        onCheckedChange={(checked) => setHasLiveAccess(!!checked)}
+                      />
+                      <label
+                        htmlFor="liveAccess"
+                        className="text-sm font-medium leading-none"
+                      >
+                        Live access available
+                      </label>
+                    </div>
+                    <p className="text-xs text-amber-600 mt-1">
+                      Note: You can charge a higher price if CCTV with live access is available
+                    </p>
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -477,7 +589,29 @@ const AddNewSpot: React.FC = () => {
           {step === 3 && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Photos (Take 3 photos)</Label>
+                <Label>Photos (Take 3 photos with your camera)</Label>
+                
+                {/* Camera view */}
+                {cameraStream && (
+                  <div className="relative border rounded-md overflow-hidden mb-4">
+                    <video 
+                      ref={videoRef} 
+                      autoPlay 
+                      playsInline 
+                      className="w-full h-60 object-cover"
+                    ></video>
+                    <Button
+                      className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-primary"
+                      onClick={handleCapturePhoto}
+                    >
+                      <Camera size={16} className="mr-1" />
+                      Capture Photo
+                    </Button>
+                    {/* Hidden canvas for capturing images */}
+                    <canvas ref={canvasRef} className="hidden"></canvas>
+                  </div>
+                )}
+                
                 <div className="grid grid-cols-3 gap-3">
                   {[0, 1, 2].map((index) => {
                     const photo = photos[index];
@@ -492,9 +626,6 @@ const AddNewSpot: React.FC = () => {
                               src={photo.src} 
                               alt={`Photo ${index + 1}`}
                               className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '/placeholder.svg';
-                              }}
                             />
                             <button
                               className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-md"
@@ -509,7 +640,7 @@ const AddNewSpot: React.FC = () => {
                             variant="ghost"
                             size="sm"
                             className="flex flex-col items-center gap-1 h-full w-full"
-                            onClick={handleTakePhoto}
+                            onClick={handleCapturePhoto}
                             type="button"
                           >
                             <Camera size={24} />
@@ -581,6 +712,15 @@ const AddNewSpot: React.FC = () => {
                         </div>
                       )}
                     </div>
+                    
+                    <Button
+                      variant="outline"
+                      className="mt-4 w-full"
+                      onClick={handleManualReview}
+                    >
+                      <FileSearch size={16} className="mr-1" />
+                      Appeal for Manual Analysis
+                    </Button>
                   </CardContent>
                 </Card>
               )}

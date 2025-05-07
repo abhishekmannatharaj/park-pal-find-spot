@@ -35,6 +35,8 @@ const SearchAndFilter: React.FC = () => {
     setShowFilters(false);
   };
 
+  const vehicleTypes: VehicleType[] = ['car', 'bike', 'sedan', 'hatchback', 'suv'];
+
   return (
     <div className="w-full">
       <div className="flex items-center gap-2 mb-2">
@@ -71,31 +73,18 @@ const SearchAndFilter: React.FC = () => {
               {/* Vehicle Type Filter */}
               <div>
                 <label className="text-sm font-medium">Vehicle Type:</label>
-                <div className="flex gap-2 mt-1">
-                  <Button 
-                    size="sm" 
-                    variant={filters.vehicleType === 'car' ? "default" : "outline"}
-                    onClick={() => handleVehicleTypeChange('car')}
-                    className={filters.vehicleType === 'car' ? "bg-primary" : ""}
-                  >
-                    Car
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant={filters.vehicleType === 'bike' ? "default" : "outline"}
-                    onClick={() => handleVehicleTypeChange('bike')}
-                    className={filters.vehicleType === 'bike' ? "bg-primary" : ""}
-                  >
-                    Bike
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant={filters.vehicleType === 'sedan' ? "default" : "outline"}
-                    onClick={() => handleVehicleTypeChange('sedan')}
-                    className={filters.vehicleType === 'sedan' ? "bg-primary" : ""}
-                  >
-                    Sedan
-                  </Button>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {vehicleTypes.map(type => (
+                    <Button 
+                      key={type}
+                      size="sm" 
+                      variant={filters.vehicleType === type ? "default" : "outline"}
+                      onClick={() => handleVehicleTypeChange(type)}
+                      className={filters.vehicleType === type ? "bg-primary" : ""}
+                    >
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </Button>
+                  ))}
                 </div>
               </div>
               

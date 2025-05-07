@@ -22,12 +22,23 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { 
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import { 
   Star, 
   Calendar, 
   Clock,
   Car, 
   Bike,
-  MapPin
+  MapPin,
+  MessageCircle
 } from "lucide-react";
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
@@ -38,6 +49,7 @@ const SpotDetail: React.FC = () => {
   const { user } = useAuth();
   const isSpaceOwner = user?.role === 'space_owner';
   const [isBooking, setIsBooking] = useState(false);
+  const [showChatDialog, setShowChatDialog] = useState(false);
   
   // Booking form state
   const [startTime, setStartTime] = useState('');
@@ -45,6 +57,7 @@ const SpotDetail: React.FC = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [totalCost, setTotalCost] = useState(0);
+  const [chatMessage, setChatMessage] = useState('');
 
   // Calculate total cost when times or dates change
   React.useEffect(() => {
@@ -111,6 +124,22 @@ const SpotDetail: React.FC = () => {
       setIsBooking(false);
     } else {
       setIsBooking(true);
+    }
+  };
+  
+  const handleChatWithOwner = () => {
+    setShowChatDialog(true);
+  };
+  
+  const handleSendMessage = () => {
+    if (chatMessage.trim()) {
+      // In a real app, this would send the message to the owner
+      setChatMessage('');
+      // Mock a response
+      setTimeout(() => {
+        setShowChatDialog(false);
+        alert('Message sent to the spot owner. They will respond shortly.');
+      }, 500);
     }
   };
 
@@ -268,6 +297,9 @@ const SpotDetail: React.FC = () => {
                 <p className="text-xs text-gray-500 mt-1">
                   *Includes any applicable taxes and fees
                 </p>
+                <p className="text-xs text-amber-600 mt-2 font-medium">
+                  Note: If your parking time exceeds the booked duration, additional fine amount will be collected.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -282,6 +314,16 @@ const SpotDetail: React.FC = () => {
           >
             Get Directions
           </Button>
+          
+          <Button 
+            variant="outline" 
+            className="flex-1"
+            onClick={handleChatWithOwner}
+          >
+            <MessageCircle size={16} className="mr-1" />
+            Chat with Owner
+          </Button>
+          
           {!isSpaceOwner && (
             <Button 
               className="flex-1 bg-primary hover:bg-primary/90"
@@ -293,6 +335,40 @@ const SpotDetail: React.FC = () => {
           )}
         </CardFooter>
       </DialogContent>
+      
+      {/* Chat Dialog */}
+      <AlertDialog open={showChatDialog} onOpenChange={setShowChatDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Chat with {selectedSpot.name} Owner</AlertDialogTitle>
+            <AlertDialogDescription>
+              Send a message to the spot owner. They will respond to your inquiries shortly.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="border rounded-md p-4 bg-gray-50 h-40 overflow-y-auto">
+              <p className="text-sm text-gray-500 italic">Start a conversation with the spot owner...</p>
+            </div>
+            
+            <div className="flex gap-2">
+              <Input 
+                placeholder="Type your message..." 
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                className="flex-1"
+              />
+              <Button onClick={handleSendMessage} disabled={!chatMessage.trim()}>
+                Send
+              </Button>
+            </div>
+          </div>
+          
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

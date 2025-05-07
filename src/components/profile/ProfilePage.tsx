@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
 import { useAuth, UserRole } from '@/context/AuthContext';
-import { Upload, LogOut, Trash } from 'lucide-react';
+import { Upload, LogOut, Trash, FileText, FileCheck, FileSearch } from 'lucide-react';
 
 const ProfilePage: React.FC = () => {
   const { user, logout, switchRole } = useAuth();
@@ -27,7 +27,12 @@ const ProfilePage: React.FC = () => {
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
   const [uploadedDocument, setUploadedDocument] = useState<File | null>(null);
   const [documentPreview, setDocumentPreview] = useState<string | null>(null);
+  const [uploadedAgreement, setUploadedAgreement] = useState<File | null>(null);
+  const [agreementPreview, setAgreementPreview] = useState<string | null>(null);
+  const [verificationInProgress, setVerificationInProgress] = useState(false);
+  const [showManualReviewDialog, setShowManualReviewDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const agreementInputRef = useRef<HTMLInputElement>(null);
   
   const handleRoleChange = (checked: boolean) => {
     const newRole: UserRole = checked ? 'vehicle_owner' : 'space_owner';
@@ -41,34 +46,63 @@ const ProfilePage: React.FC = () => {
     toast.success('Logged out successfully');
   };
   
-  const handleUploadClick = () => {
-    if (fileInputRef.current) {
+  const handleUploadClick = (type: 'document' | 'agreement') => {
+    if (type === 'document' && fileInputRef.current) {
       fileInputRef.current.click();
+    } else if (type === 'agreement' && agreementInputRef.current) {
+      agreementInputRef.current.click();
     }
   };
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'document' | 'agreement') => {
     const file = e.target.files?.[0];
     if (file) {
-      setUploadedDocument(file);
-      // Create preview URL
-      const previewUrl = URL.createObjectURL(file);
-      setDocumentPreview(previewUrl);
+      if (type === 'document') {
+        setUploadedDocument(file);
+        const previewUrl = URL.createObjectURL(file);
+        setDocumentPreview(previewUrl);
+      } else {
+        setUploadedAgreement(file);
+        const previewUrl = URL.createObjectURL(file);
+        setAgreementPreview(previewUrl);
+      }
     }
   };
 
-  const handleDeleteDocument = () => {
-    setUploadedDocument(null);
-    if (documentPreview) {
-      URL.revokeObjectURL(documentPreview);
-      setDocumentPreview(null);
+  const handleDeleteDocument = (type: 'document' | 'agreement') => {
+    if (type === 'document') {
+      setUploadedDocument(null);
+      if (documentPreview) {
+        URL.revokeObjectURL(documentPreview);
+        setDocumentPreview(null);
+      }
+    } else {
+      setUploadedAgreement(null);
+      if (agreementPreview) {
+        URL.revokeObjectURL(agreementPreview);
+        setAgreementPreview(null);
+      }
     }
   };
 
   const handleSubmitDocument = () => {
-    toast.success('Document uploaded successfully! We will verify it shortly.');
+    if (!uploadedDocument || !uploadedAgreement) {
+      toast.error('Please upload both ID document and spot agreement');
+      return;
+    }
+    setVerificationInProgress = true;
+    toast.success('Documents uploaded successfully! We will verify them shortly.');
     setShowVerificationDialog(false);
     // In a real app, we would upload the file to a server
+  };
+  
+  const handleManualReview = () => {
+    setShowManualReviewDialog(true);
+  };
+  
+  const handleSubmitManualReview = () => {
+    toast.success('Your request for manual review has been submitted');
+    setShowManualReviewDialog(false);
   };
 
   return (
@@ -118,7 +152,20 @@ const ProfilePage: React.FC = () => {
                         </span>
                         {user.verificationStatus === 'approved' && <span className="text-green-600">✓</span>}
                         {user.verificationStatus === 'rejected' && <span className="text-red-600">✕</span>}
-                        {user.verificationStatus === 'pending' && <span className="text-yellow-600">⏳</span>}
+                        {user.verificationStatus === 'pending' && (
+                          <div className="flex space-x-2">
+                            <span className="text-yellow-600">⏳</span>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="ml-2 text-xs"
+                              onClick={handleManualReview}
+                            >
+                              <FileSearch size={14} className="mr-1" />
+                              Appeal for Manual Review
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <span className="text-sm text-gray-500">Not Verified</span>
@@ -167,59 +214,145 @@ const ProfilePage: React.FC = () => {
       </AlertDialog>
       
       <AlertDialog open={showVerificationDialog} onOpenChange={setShowVerificationDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
           <AlertDialogHeader>
-            <AlertDialogTitle>Upload Verification Document</AlertDialogTitle>
+            <AlertDialogTitle>Upload Verification Documents</AlertDialogTitle>
             <AlertDialogDescription>
-              Please upload a government-issued ID for verification. We accept Passport, Driver's License, or National ID.
+              Please upload the following documents for verification:
+              <ul className="list-disc list-inside mt-2">
+                <li>A government-issued ID (Passport, Driver's License, or National ID)</li>
+                <li>Agreement with spot details</li>
+              </ul>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="py-4">
-            {documentPreview ? (
-              <div className="relative">
-                <img 
-                  src={documentPreview} 
-                  alt="Document Preview"
-                  className="w-full h-48 object-contain border rounded-md"
-                />
+          <div className="py-4 space-y-4">
+            {/* ID Document Upload */}
+            <div>
+              <Label className="font-medium">ID Document</Label>
+              {documentPreview ? (
+                <div className="relative mt-2">
+                  <img 
+                    src={documentPreview} 
+                    alt="Document Preview"
+                    className="w-full h-48 object-contain border rounded-md"
+                  />
+                  {!verificationInProgress && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      className="absolute top-2 right-2 p-1 h-8 w-8"
+                      onClick={() => handleDeleteDocument('document')}
+                    >
+                      <Trash size={16} />
+                    </Button>
+                  )}
+                  <p className="mt-2 text-sm text-gray-500">
+                    {uploadedDocument?.name} ({Math.round((uploadedDocument?.size || 0) / 1024)} KB)
+                  </p>
+                </div>
+              ) : (
                 <Button 
-                  variant="destructive" 
-                  size="sm"
-                  className="absolute top-2 right-2 p-1 h-8 w-8"
-                  onClick={handleDeleteDocument}
+                  variant="outline" 
+                  className="w-full h-32 flex flex-col items-center justify-center border-dashed mt-2"
+                  onClick={() => handleUploadClick('document')}
+                  disabled={verificationInProgress}
                 >
-                  <Trash size={16} />
+                  <FileText size={24} className="mb-2" />
+                  <span>Upload ID document</span>
+                  <span className="text-xs text-gray-500 mt-1">JPG, PNG or PDF</span>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    className="hidden" 
+                    accept="image/jpeg,image/png,application/pdf"
+                    onChange={(e) => handleFileChange(e, 'document')}
+                    disabled={verificationInProgress}
+                  />
                 </Button>
-                <p className="mt-2 text-sm text-center text-gray-500">
-                  {uploadedDocument?.name} ({Math.round((uploadedDocument?.size || 0) / 1024)} KB)
-                </p>
+              )}
+            </div>
+
+            {/* Agreement Upload */}
+            <div>
+              <Label className="font-medium">Spot Agreement</Label>
+              {agreementPreview ? (
+                <div className="relative mt-2">
+                  <img 
+                    src={agreementPreview} 
+                    alt="Agreement Preview"
+                    className="w-full h-48 object-contain border rounded-md"
+                  />
+                  {!verificationInProgress && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      className="absolute top-2 right-2 p-1 h-8 w-8"
+                      onClick={() => handleDeleteDocument('agreement')}
+                    >
+                      <Trash size={16} />
+                    </Button>
+                  )}
+                  <p className="mt-2 text-sm text-gray-500">
+                    {uploadedAgreement?.name} ({Math.round((uploadedAgreement?.size || 0) / 1024)} KB)
+                  </p>
+                </div>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  className="w-full h-32 flex flex-col items-center justify-center border-dashed mt-2"
+                  onClick={() => handleUploadClick('agreement')}
+                  disabled={verificationInProgress}
+                >
+                  <FileText size={24} className="mb-2" />
+                  <span>Upload spot agreement</span>
+                  <span className="text-xs text-gray-500 mt-1">JPG, PNG or PDF</span>
+                  <input 
+                    type="file" 
+                    ref={agreementInputRef}
+                    className="hidden" 
+                    accept="image/jpeg,image/png,application/pdf"
+                    onChange={(e) => handleFileChange(e, 'agreement')}
+                    disabled={verificationInProgress}
+                  />
+                </Button>
+              )}
+            </div>
+
+            {verificationInProgress && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md flex items-center">
+                <FileCheck className="text-yellow-500 mr-2" size={18} />
+                <span className="text-sm text-yellow-700">Verification in progress. We'll notify you once complete.</span>
               </div>
-            ) : (
-              <Button 
-                variant="outline" 
-                className="w-full h-32 flex flex-col items-center justify-center border-dashed"
-                onClick={handleUploadClick}
-              >
-                <Upload size={24} className="mb-2" />
-                <span>Click to upload document</span>
-                <span className="text-xs text-gray-500 mt-1">JPG, PNG or PDF</span>
-                <input 
-                  type="file" 
-                  ref={fileInputRef}
-                  className="hidden" 
-                  accept="image/jpeg,image/png,application/pdf"
-                  onChange={handleFileChange}
-                />
-              </Button>
             )}
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            {documentPreview && (
-              <AlertDialogAction onClick={handleSubmitDocument}>
+            <AlertDialogCancel disabled={verificationInProgress}>Cancel</AlertDialogCancel>
+            {!verificationInProgress && (
+              <AlertDialogAction 
+                onClick={handleSubmitDocument}
+                disabled={!uploadedDocument || !uploadedAgreement}
+              >
                 Submit for Verification
               </AlertDialogAction>
             )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showManualReviewDialog} onOpenChange={setShowManualReviewDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Request Manual Review</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to request a manual review of your verification documents? 
+              This may take additional time but will be reviewed by a human instead of our automated system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSubmitManualReview}>
+              Submit Request
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
