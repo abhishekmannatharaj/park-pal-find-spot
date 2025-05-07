@@ -48,7 +48,7 @@ const AppRoutes = () => {
         <Route path="/map" element={<MapPage />} />
         <Route path="/bookings" element={<BookingsPage />} />
         <Route path="/spots" element={<SpotsPage />} />
-        <Route path="/add-spot" element={<Navigate to="/spots" replace />} />
+        <Route path="/add-spot" element={<AddSpotPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
       
