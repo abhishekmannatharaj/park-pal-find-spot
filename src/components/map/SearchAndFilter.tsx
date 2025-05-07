@@ -35,8 +35,8 @@ const SearchAndFilter: React.FC = () => {
     setShowFilters(false);
   };
 
-  // Expanded list of vehicle types
-  const vehicleTypes: VehicleType[] = ['car', 'bike', 'sedan', 'hatchback', 'suv', 'truck', 'van', 'motorcycle', 'compact'];
+  // Reduced list of vehicle types as requested
+  const vehicleTypes: VehicleType[] = ['car', 'bike', 'sedan', 'hatchback', 'suv'];
 
   return (
     <div className="w-full">

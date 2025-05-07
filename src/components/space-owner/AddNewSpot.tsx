@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ import {
 import { useApp, VehicleType } from '@/context/AppContext';
 import GoogleMap from '@/components/map/GoogleMap';
 import { toast } from 'sonner';
-import { Trash, Camera, Cctv, Search } from 'lucide-react';
+import { Trash, Upload, Cctv, Search } from 'lucide-react';
 
 // Mock AI analysis function
 const analyzeSpot = () => {
@@ -73,9 +74,6 @@ const AddNewSpot: React.FC = () => {
   const [step, setStep] = useState(1);
   const [hasCctv, setHasCctv] = useState(false);
   const [hasLiveAccess, setHasLiveAccess] = useState(false);
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   
   // Handle vehicle type selection
   const handleVehicleTypeChange = (type: VehicleType) => {
@@ -93,103 +91,36 @@ const AddNewSpot: React.FC = () => {
     setLocation(location);
   };
   
-  // Handle camera setup
-  const setupCamera = async () => {
-    try {
-      // Check if browser supports getUserMedia
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        toast.error("Your browser doesn't support camera access");
-        return false;
-      }
-      
-      // Request camera permission
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-      });
-      
-      // Set the stream to the video element
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      
-      setCameraStream(stream);
-      return true;
-    } catch (error) {
-      console.error("Camera error:", error);
-      toast.error("Failed to access camera");
-      return false;
-    }
-  };
-  
-  // Release camera resources
-  const releaseCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
-    }
-  };
-  
-  // Handle photo capture
-  const handleCapturePhoto = () => {
-    if (photos.length >= 3) {
+  // Handle file upload
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    
+    if (photos.length + files.length > 3) {
       toast.error("Maximum 3 photos allowed");
       return;
     }
     
-    if (!cameraStream) {
-      setupCamera().then(success => {
-        if (success) {
-          toast.info("Camera ready. Click 'Capture Photo' when ready.");
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          const newPhoto = {
+            id: `photo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            src: event.target.result as string
+          };
+          
+          setPhotos(prev => [...prev, newPhoto]);
         }
-      });
-      return;
-    }
-    
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      
-      // Set canvas dimensions to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      
-      // Draw the current video frame to the canvas
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Convert canvas to data URL (image)
-        const photoDataUrl = canvas.toDataURL('image/jpeg');
-        
-        // Add to photos array
-        const newPhoto = {
-          id: `photo-${Date.now()}`,
-          src: photoDataUrl
-        };
-        
-        setPhotos(prev => [...prev, newPhoto]);
-        
-        toast.success("Photo captured!");
-        
-        // If we've reached 3 photos, release camera
-        if (photos.length >= 2) { // 2 + 1 new = 3 total
-          releaseCamera();
-        }
-      }
-    }
+      };
+      reader.readAsDataURL(file);
+    });
   };
   
   // Handle photo deletion
   const handleDeletePhoto = (id: string) => {
     setPhotos(prev => prev.filter(photo => photo.id !== id));
   };
-  
-  // Clean up camera on unmount
-  useEffect(() => {
-    return () => {
-      releaseCamera();
-    };
-  }, []);
   
   // Handle form submission
   const handleSubmit = () => {
@@ -229,7 +160,7 @@ const AddNewSpot: React.FC = () => {
     
     // If we're at the final step, submit the form
     if (photos.length < 3) {
-      toast.error("Please capture 3 photos");
+      toast.error("Please upload 3 photos");
       return;
     }
     
@@ -595,70 +526,69 @@ const AddNewSpot: React.FC = () => {
           {step === 3 && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Photos (Take 3 photos with your camera)</Label>
+                <Label>Photos (Upload 3 photos)</Label>
                 
-                {/* Camera view */}
-                {cameraStream && (
-                  <div className="relative border rounded-md overflow-hidden mb-4">
-                    <video 
-                      ref={videoRef} 
-                      autoPlay 
-                      playsInline 
-                      className="w-full h-60 object-cover"
-                    ></video>
-                    <Button
-                      className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-primary"
-                      onClick={handleCapturePhoto}
-                    >
-                      <Camera size={16} className="mr-1" />
-                      Capture Photo
-                    </Button>
-                    {/* Hidden canvas for capturing images */}
-                    <canvas ref={canvasRef} className="hidden"></canvas>
-                  </div>
-                )}
-                
-                <div className="grid grid-cols-3 gap-3">
-                  {[0, 1, 2].map((index) => {
-                    const photo = photos[index];
-                    return (
-                      <div 
-                        key={index} 
-                        className="aspect-square bg-gray-100 rounded-md flex items-center justify-center relative overflow-hidden border"
-                      >
-                        {photo ? (
-                          <>
-                            <img 
-                              src={photo.src} 
-                              alt={`Photo ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                            <button
-                              className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-md"
-                              onClick={() => handleDeletePhoto(photo.id)}
-                              type="button"
-                            >
-                              <Trash size={16} className="text-red-500" />
-                            </button>
-                          </>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="flex flex-col items-center gap-1 h-full w-full"
-                            onClick={handleCapturePhoto}
-                            type="button"
-                          >
-                            <Camera size={24} />
-                            <span className="text-xs">Take Photo</span>
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })}
+                <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
+                  <input 
+                    type="file"
+                    id="photo-upload"
+                    className="hidden"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileUpload}
+                  />
+                  <label 
+                    htmlFor="photo-upload"
+                    className="cursor-pointer flex flex-col items-center justify-center"
+                  >
+                    <Upload size={32} className="text-gray-400 mb-2" />
+                    <span className="text-sm font-medium">Click to upload photos</span>
+                    <span className="text-xs text-gray-500 mt-1">
+                      JPG, PNG or GIF (max. 3 files)
+                    </span>
+                  </label>
                 </div>
+                
+                <div className="grid grid-cols-3 gap-3 mt-4">
+                  {photos.map((photo, index) => (
+                    <div 
+                      key={photo.id} 
+                      className="aspect-square bg-gray-100 rounded-md flex items-center justify-center relative overflow-hidden border"
+                    >
+                      <img 
+                        src={photo.src} 
+                        alt={`Photo ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-md"
+                        onClick={() => handleDeletePhoto(photo.id)}
+                        type="button"
+                      >
+                        <Trash size={16} className="text-red-500" />
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {/* Empty placeholders */}
+                  {Array.from({ length: Math.max(0, 3 - photos.length) }).map((_, i) => (
+                    <div 
+                      key={`empty-${i}`}
+                      className="aspect-square bg-gray-100 rounded-md flex items-center justify-center border border-dashed"
+                    >
+                      <label 
+                        htmlFor="photo-upload" 
+                        className="cursor-pointer flex flex-col items-center"
+                      >
+                        <Upload size={24} className="text-gray-400" />
+                        <span className="text-xs text-gray-500 mt-1">Upload</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                
                 <p className="text-xs text-gray-500 mt-1">
-                  {photos.length}/3 photos taken
+                  {photos.length}/3 photos uploaded
                 </p>
               </div>
               

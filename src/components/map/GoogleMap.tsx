@@ -50,7 +50,7 @@ const MapComponent: React.FC<MapProps> = ({
 
   // Get user's location
   useEffect(() => {
-    if (map && !userLocation && !pickLocation) {
+    if (map && !userLocation) {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -95,7 +95,7 @@ const MapComponent: React.FC<MapProps> = ({
         toast.error("Your browser doesn't support geolocation");
       }
     }
-  }, [map, userLocation, pickLocation]);
+  }, [map, userLocation]);
 
   // Location picker functionality
   useEffect(() => {
@@ -200,9 +200,12 @@ const MapComponent: React.FC<MapProps> = ({
         google.maps.event.addListener(spotCircle, 'mouseover', () => {
           spotCircle.setOptions({
             fillOpacity: 0.9,
-            strokeWeight: 3,
-            cursor: 'pointer'
+            strokeWeight: 3
           });
+          // Change the CSS cursor - we need to do this via the map container since Circle doesn't support cursor property
+          if (ref.current) {
+            ref.current.style.cursor = 'pointer';
+          }
         });
 
         google.maps.event.addListener(spotCircle, 'mouseout', () => {
@@ -210,6 +213,10 @@ const MapComponent: React.FC<MapProps> = ({
             fillOpacity: 0.7,
             strokeWeight: 2
           });
+          // Reset cursor
+          if (ref.current) {
+            ref.current.style.cursor = '';
+          }
         });
         
         // Add a small info window to show spot name on hover
