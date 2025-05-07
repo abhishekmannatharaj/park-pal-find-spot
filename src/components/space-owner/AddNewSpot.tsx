@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,7 @@ import {
 import { useApp, VehicleType } from '@/context/AppContext';
 import GoogleMap from '@/components/map/GoogleMap';
 import { toast } from 'sonner';
-import { Trash, Camera, Cctv } from 'lucide-react';
+import { Trash, Camera, Cctv, Search } from 'lucide-react';
 
 // Mock AI analysis function
 const analyzeSpot = () => {
@@ -40,8 +39,13 @@ const analyzeSpot = () => {
   const selectedPros = [...pros].sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 2) + 2);
   const selectedCons = [...cons].sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 2) + 1);
   
+  // Generate random tags
+  const allTags = ['Indoor', 'Outdoor', 'Covered', 'Uncovered', 'Safe', 'Well-lit', 'CCTV', 'Security'];
+  const selectedTags = [...allTags].sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 3) + 2);
+  
   return {
     safety,
+    tags: selectedTags,
     analysis: {
       pros: selectedPros,
       cons: selectedCons,
@@ -253,7 +257,7 @@ const AddNewSpot: React.FC = () => {
       address,
       location: location || { lat: 12.9716, lng: 77.5946 },
       price,
-      rating: 0,
+      rating: analysis ? analysis.safety : 0,
       vehicleTypes,
       images: photos.map(photo => photo.src),
       availability: {
@@ -262,6 +266,8 @@ const AddNewSpot: React.FC = () => {
       },
       status: 'available'
     });
+    
+    toast.success("Spot added successfully!");
     
     // Reset form
     setName('');
@@ -689,6 +695,15 @@ const AddNewSpot: React.FC = () => {
                     
                     <p className="text-sm text-gray-600 mb-3">{analysis.analysis.summary}</p>
                     
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {analysis.tags.map((tag: string, i: number) => (
+                        <span key={i} className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    
                     <div className="space-y-2">
                       {analysis.analysis.pros.length > 0 && (
                         <div>
@@ -718,7 +733,7 @@ const AddNewSpot: React.FC = () => {
                       className="mt-4 w-full"
                       onClick={handleManualReview}
                     >
-                      <FileSearch size={16} className="mr-1" />
+                      <Search size={16} className="mr-1" />
                       Appeal for Manual Analysis
                     </Button>
                   </CardContent>

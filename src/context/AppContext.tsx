@@ -1,9 +1,8 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { toast } from 'sonner';
 
 // Types
-export type VehicleType = 'car' | 'bike' | 'sedan' | 'hatchback' | 'suv';
+export type VehicleType = 'car' | 'bike' | 'sedan' | 'hatchback' | 'suv' | 'truck' | 'van' | 'motorcycle' | 'compact';
 
 export type BookingStatus = 'pending' | 'approved' | 'rejected' | 'completed';
 
@@ -115,7 +114,7 @@ const generateDummyParkingSpots = (): ParkingSpot[] => {
       images: [
         'https://images.unsplash.com/photo-1621929747188-0b4dc28498d2?q=80&w=400',
         'https://images.unsplash.com/photo-1470224114660-3f6686c562eb?q=80&w=400',
-        'https://images.unsplash.com/photo-1617347454431-f49d7ff5c3b1?q=80&w=400'
+        'https://images.unsplash.com/photo-1611192052550-32918395b8c6?q=80&w=400'
       ],
       availability: {
         startDate: new Date(),

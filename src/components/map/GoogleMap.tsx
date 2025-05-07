@@ -173,7 +173,7 @@ const MapComponent: React.FC<MapProps> = ({
             fillColor = '#757575'; // Gray
         }
         
-        // Create a larger circular zone
+        // Create a larger circular zone with button-like behavior
         const spotCircle = new google.maps.Circle({
           strokeColor: '#FFFFFF',
           strokeOpacity: 0.8,
@@ -189,18 +189,19 @@ const MapComponent: React.FC<MapProps> = ({
         // Add to ref for cleanup
         spotCirclesRef.current.push(spotCircle);
 
-        // Add click listener to the circle
+        // Add click listener to the circle - when clicked, show spot detail
         google.maps.event.addListener(spotCircle, 'click', () => {
           if (onSpotClick) {
             onSpotClick(spot);
           }
         });
 
-        // Add hover styles
+        // Add hover styles to make it feel like a button
         google.maps.event.addListener(spotCircle, 'mouseover', () => {
           spotCircle.setOptions({
             fillOpacity: 0.9,
-            strokeWeight: 3
+            strokeWeight: 3,
+            cursor: 'pointer'
           });
         });
 
@@ -210,12 +211,32 @@ const MapComponent: React.FC<MapProps> = ({
             strokeWeight: 2
           });
         });
+        
+        // Add a small info window to show spot name on hover
+        const infoWindow = new google.maps.InfoWindow({
+          content: `<div style="font-weight: bold;">${spot.name}</div><div>₹${spot.price.hourly}/hr</div>`,
+          disableAutoPan: true
+        });
+        
+        google.maps.event.addListener(spotCircle, 'mouseover', () => {
+          infoWindow.setPosition(spot.location);
+          infoWindow.open(map);
+        });
+        
+        google.maps.event.addListener(spotCircle, 'mouseout', () => {
+          infoWindow.close();
+        });
       });
     }
 
     return () => {
       // Clean up circles
-      spotCirclesRef.current.forEach(circle => circle.setMap(null));
+      spotCirclesRef.current.forEach(circle => {
+        if (circle) {
+          google.maps.event.clearInstanceListeners(circle);
+          circle.setMap(null);
+        }
+      });
     };
   }, [map, spots, pickLocation, onSpotClick]);
 
@@ -227,11 +248,19 @@ const GoogleMap: React.FC<Omit<MapProps, 'spots'> & { apiKey: string }> = ({
   apiKey,
   ...props
 }) => {
-  const { filteredSpots } = useApp();
+  const { filteredSpots, setSelectedSpot } = useApp();
+
+  const handleSpotClick = (spot: ParkingSpot) => {
+    setSelectedSpot(spot);
+  };
 
   return (
     <Wrapper apiKey={apiKey} libraries={['places']}>
-      <MapComponent spots={filteredSpots} {...props} />
+      <MapComponent 
+        spots={filteredSpots} 
+        onSpotClick={handleSpotClick}
+        {...props} 
+      />
     </Wrapper>
   );
 };
