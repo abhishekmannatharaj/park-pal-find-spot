@@ -163,7 +163,7 @@ const SpotDetail: React.FC = () => {
       open={!!selectedSpot} 
       onOpenChange={(open) => !open && setSelectedSpot(null)}
     >
-      <DialogContent className="max-w-md mx-auto max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md mx-auto max-h-[90vh] overflow-y-auto w-[95vw] md:w-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">{selectedSpot.name}</DialogTitle>
         </DialogHeader>
@@ -238,11 +238,11 @@ const SpotDetail: React.FC = () => {
         
         {/* Booking Form - Only show for vehicle owners */}
         {isBooking && !isSpaceOwner && (
-          <Card className="animate-fade-in">
-            <CardContent className="p-4 space-y-4">
+          <Card className="animate-fade-in overflow-visible">
+            <CardContent className="p-4 space-y-4 overflow-visible">
               <h3 className="font-medium">Book this spot</h3>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 overflow-visible">
                 <div className="space-y-1">
                   <Label htmlFor="startDate">Start Date</Label>
                   <Input
@@ -306,10 +306,10 @@ const SpotDetail: React.FC = () => {
         )}
         
         {/* Action Buttons */}
-        <CardFooter className="flex gap-3 pt-0">
+        <CardFooter className="flex flex-wrap gap-3 pt-0">
           <Button 
             variant="outline" 
-            className="flex-1"
+            className="flex-1 min-w-[120px]"
             onClick={handleGetDirections}
           >
             Get Directions
@@ -317,7 +317,7 @@ const SpotDetail: React.FC = () => {
           
           <Button 
             variant="outline" 
-            className="flex-1"
+            className="flex-1 min-w-[120px]"
             onClick={handleChatWithOwner}
           >
             <MessageCircle size={16} className="mr-1" />
@@ -326,7 +326,7 @@ const SpotDetail: React.FC = () => {
           
           {!isSpaceOwner && (
             <Button 
-              className="flex-1 bg-primary hover:bg-primary/90"
+              className="flex-1 min-w-[120px] bg-primary hover:bg-primary/90"
               onClick={handleBookNow}
               disabled={isBooking && (!startDate || !startTime || !endDate || !endTime || totalCost === 0)}
             >
@@ -338,7 +338,7 @@ const SpotDetail: React.FC = () => {
       
       {/* Chat Dialog */}
       <AlertDialog open={showChatDialog} onOpenChange={setShowChatDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md w-[95vw] md:w-auto">
           <AlertDialogHeader>
             <AlertDialogTitle>Chat with {selectedSpot.name} Owner</AlertDialogTitle>
             <AlertDialogDescription>

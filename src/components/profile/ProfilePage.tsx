@@ -90,7 +90,7 @@ const ProfilePage: React.FC = () => {
       toast.error('Please upload both ID document and spot agreement');
       return;
     }
-    setVerificationInProgress = true;
+    setVerificationInProgress(true); // Fixed this line - was missing parentheses
     toast.success('Documents uploaded successfully! We will verify them shortly.');
     setShowVerificationDialog(false);
     // In a real app, we would upload the file to a server
@@ -176,6 +176,7 @@ const ProfilePage: React.FC = () => {
                     size="sm"
                     className="flex items-center gap-1"
                     onClick={() => setShowVerificationDialog(true)}
+                    disabled={verificationInProgress}
                   >
                     <Upload size={14} />
                     <span>Upload Document</span>
