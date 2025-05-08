@@ -16,19 +16,19 @@ const StatusBadge: React.FC<{ status: ParkingSpot['status'] }> = ({ status }) =>
   let text = 'Unavailable';
 
   switch (status) {
-    case 'available':
+    case "available":
       color = 'bg-green-100 text-green-800';
       text = 'Available';
       break;
-    case 'soon':
+    case "soon":
       color = 'bg-yellow-100 text-yellow-800';
       text = 'Soon Available';
       break;
-    case 'filling':
+    case "filling":
       color = 'bg-red-100 text-red-800';
       text = 'Filling Fast';
       break;
-    case 'full':
+    case "full":
       color = 'bg-gray-100 text-gray-800';
       text = 'Full';
       break;
@@ -42,7 +42,21 @@ const StatusBadge: React.FC<{ status: ParkingSpot['status'] }> = ({ status }) =>
 };
 
 const SpotCard: React.FC<{ spot: ParkingSpot }> = ({ spot }) => {
-  const { setSelectedSpot } = useApp();
+  const { setSelectedSpot, getSpotReviews } = useApp();
+  const reviews = getSpotReviews(spot.id);
+  const reviewCount = reviews.length;
+  
+  // Get the top review attributes
+  const topAttributes = [];
+  if (reviews.some(r => r.attributes.isRealImage)) {
+    topAttributes.push("Real Images");
+  }
+  if (reviews.some(r => r.attributes.isOwnerResponsive)) {
+    topAttributes.push("Responsive Owner");
+  }
+  if (reviews.some(r => r.attributes.isSafeParking)) {
+    topAttributes.push("Safe");
+  }
 
   return (
     <Card className="mb-3 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedSpot(spot)}>
@@ -66,8 +80,20 @@ const SpotCard: React.FC<{ spot: ParkingSpot }> = ({ spot }) => {
             <div className="flex items-center text-sm text-gray-600 mt-1">
               <Star size={14} className="text-yellow-500 mr-1" fill="currentColor" />
               <span>{spot.rating}</span>
+              {reviewCount > 0 && (
+                <span className="text-xs ml-1">({reviewCount})</span>
+              )}
             </div>
             <p className="text-sm text-gray-500 mt-1 line-clamp-1">{spot.description}</p>
+            
+            {reviewCount > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {topAttributes.slice(0, 2).map((attr, i) => (
+                  <span key={i} className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">{attr}</span>
+                ))}
+              </div>
+            )}
+            
             <div className="flex justify-between items-center mt-2">
               <div className="font-medium">{formatCurrency(spot.price.hourly)}/hr</div>
               <Button variant="outline" size="sm" className="h-7 text-xs">

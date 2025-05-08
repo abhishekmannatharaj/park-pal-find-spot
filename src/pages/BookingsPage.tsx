@@ -4,9 +4,16 @@ import BookingRequests from '@/components/space-owner/BookingRequests';
 import MyBookings from '@/components/vehicle-owner/MyBookings';
 import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/context/AuthContext';
+import { Navigate } from 'react-router-dom';
 
 const BookingsPage: React.FC = () => {
   const { user } = useAuth();
+  
+  // Redirect admin users to the admin page
+  if (user?.role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
+  
   const isSpaceOwner = user?.role === 'space_owner';
   
   return (

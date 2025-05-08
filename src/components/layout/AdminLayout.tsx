@@ -10,8 +10,16 @@ interface AdminLayoutProps {
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
+
+  // Ensure only admin users can access this layout
+  React.useEffect(() => {
+    if (user && user.role !== 'admin') {
+      navigate('/login');
+      toast.error("Only admin users can access this page");
+    }
+  }, [user, navigate]);
 
   const handleLogout = () => {
     logout();
