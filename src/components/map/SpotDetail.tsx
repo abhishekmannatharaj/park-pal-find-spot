@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Dialog, 
@@ -5,45 +6,18 @@ import {
   DialogHeader, 
   DialogTitle 
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { 
-  Card, 
-  CardContent, 
-  CardFooter 
-} from "@/components/ui/card";
-import { 
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { 
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
-import { 
-  Star, 
-  Calendar, 
-  Clock,
-  Car, 
-  Bike,
-  MapPin,
-  MessageCircle
-} from "lucide-react";
+import { CardFooter } from "@/components/ui/card";
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
-import { cn, formatCurrency } from '@/lib/utils';
-import Reviews from './Reviews';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+// Import refactored components
+import SpotImageCarousel from './SpotImageCarousel';
+import SpotDetailsTab from './SpotDetailsTab';
+import BookingForm from './BookingForm';
+import ActionButtons from './ActionButtons';
+import ChatDialog from './ChatDialog';
+import Reviews from './Reviews';
 
 const SpotDetail: React.FC = () => {
   const { selectedSpot, setSelectedSpot, bookSpot } = useApp();
@@ -53,35 +27,27 @@ const SpotDetail: React.FC = () => {
   const [showChatDialog, setShowChatDialog] = useState(false);
   
   // Booking form state
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [totalCost, setTotalCost] = useState(0);
-  const [chatMessage, setChatMessage] = useState('');
   const [activeTab, setActiveTab] = useState('details');
 
-  // Calculate total cost when times or dates change
-  React.useEffect(() => {
-    if (startDate && startTime && endDate && endTime && selectedSpot) {
-      const start = new Date(`${startDate}T${startTime}`);
-      const end = new Date(`${endDate}T${endTime}`);
-      
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end > start) {
-        // Calculate the duration in hours
-        const durationMs = end.getTime() - start.getTime();
-        const durationHours = durationMs / (1000 * 60 * 60);
-        
-        // Calculate the cost
-        const cost = selectedSpot.price.hourly * durationHours;
-        setTotalCost(cost);
-      } else {
-        setTotalCost(0);
-      }
-    } else {
-      setTotalCost(0);
-    }
-  }, [startDate, startTime, endDate, endTime, selectedSpot]);
+  // Handler for booking form data changes
+  const handleBookingDataChange = (
+    newStartDate: string,
+    newStartTime: string,
+    newEndDate: string,
+    newEndTime: string,
+    newTotalCost: number
+  ) => {
+    setStartDate(newStartDate);
+    setStartTime(newStartTime);
+    setEndDate(newEndDate);
+    setEndTime(newEndTime);
+    setTotalCost(newTotalCost);
+  };
 
   // Reset booking form when spot is closed or opened
   React.useEffect(() => {
@@ -129,37 +95,6 @@ const SpotDetail: React.FC = () => {
       setIsBooking(true);
     }
   };
-  
-  const handleChatWithOwner = () => {
-    setShowChatDialog(true);
-  };
-  
-  const handleSendMessage = () => {
-    if (chatMessage.trim()) {
-      // In a real app, this would send the message to the owner
-      setChatMessage('');
-      // Mock a response
-      setTimeout(() => {
-        setShowChatDialog(false);
-        alert('Message sent to the spot owner. They will respond shortly.');
-      }, 500);
-    }
-  };
-
-  const getVehicleTypeIcon = (type: string) => {
-    switch (type) {
-      case 'car':
-        return <Car size={14} className="mr-1" />;
-      case 'bike':
-        return <Bike size={14} className="mr-1" />;
-      case 'sedan':
-      case 'hatchback':
-      case 'suv':
-        return <Car size={14} className="mr-1" />;
-      default:
-        return null;
-    }
-  };
 
   return (
     <Dialog 
@@ -172,30 +107,7 @@ const SpotDetail: React.FC = () => {
         </DialogHeader>
         
         {/* Image Carousel */}
-        <Carousel className="w-full">
-          <CarouselContent>
-            {selectedSpot.images.map((image, index) => (
-              <CarouselItem key={index}>
-                <div className="p-1">
-                  <Card>
-                    <CardContent className="flex aspect-square items-center justify-center p-0">
-                      <img 
-                        src={image} 
-                        alt={`${selectedSpot.name} - Image ${index + 1}`}
-                        className="w-full h-full object-cover rounded-md"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious />
-          <CarouselNext />
-        </Carousel>
+        <SpotImageCarousel images={selectedSpot.images} name={selectedSpot.name} />
         
         {/* Tabs for Details and Reviews */}
         <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab}>
@@ -205,47 +117,7 @@ const SpotDetail: React.FC = () => {
           </TabsList>
           
           <TabsContent value="details">
-            {/* Spot Details */}
-            <div className="space-y-3">
-              <div className="flex items-center space-x-1">
-                <Star size={16} className="text-yellow-500" fill="currentColor" />
-                <span className="font-medium">{selectedSpot.rating}</span>
-                <span className="text-gray-500 text-sm">• Rating</span>
-              </div>
-              
-              <p className="text-sm text-gray-600">{selectedSpot.description}</p>
-              
-              {selectedSpot.address && (
-                <p className="text-sm text-gray-600">{selectedSpot.address}</p>
-              )}
-              
-              <div className="flex items-center text-sm text-gray-600">
-                <MapPin size={16} className="mr-1" />
-                <span>About {(Math.random() * 3 + 0.5).toFixed(1)} km away</span>
-              </div>
-              
-              <div className="flex flex-wrap gap-2">
-                {selectedSpot.vehicleTypes.map((type) => (
-                  <div key={type} className="bg-gray-100 rounded-full px-3 py-1 text-xs flex items-center">
-                    {getVehicleTypeIcon(type)}
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </div>
-                ))}
-              </div>
-              
-              <div className="flex items-center justify-between border-t border-b py-3 mt-3">
-                <div>
-                  <p className="font-semibold">{formatCurrency(selectedSpot.price.hourly)}</p>
-                  <p className="text-xs text-gray-500">Per hour</p>
-                </div>
-                {selectedSpot.price.monthly && (
-                  <div>
-                    <p className="font-semibold">{formatCurrency(selectedSpot.price.monthly)}</p>
-                    <p className="text-xs text-gray-500">Per month</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <SpotDetailsTab spot={selectedSpot} />
           </TabsContent>
           
           <TabsContent value="reviews">
@@ -255,137 +127,31 @@ const SpotDetail: React.FC = () => {
         
         {/* Booking Form - Only show for vehicle owners */}
         {isBooking && !isSpaceOwner && (
-          <Card className="animate-fade-in overflow-visible">
-            <CardContent className="p-4 space-y-4 overflow-visible">
-              <h3 className="font-medium">Book this spot</h3>
-              
-              <div className="grid grid-cols-2 gap-3 overflow-visible">
-                <div className="space-y-1">
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={startDate}
-                    min={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="startTime">Start Time</Label>
-                  <Input
-                    id="startTime"
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="endDate">End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={endDate}
-                    min={startDate || new Date().toISOString().split('T')[0]}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="endTime">End Time</Label>
-                  <Input
-                    id="endTime"
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="bg-muted p-3 rounded-md">
-                <div className="flex justify-between">
-                  <span>Total Cost:</span>
-                  <span className="font-bold">
-                    {formatCurrency(totalCost)}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  *Includes any applicable taxes and fees
-                </p>
-                <p className="text-xs text-amber-600 mt-2 font-medium">
-                  Note: If your parking time exceeds the booked duration, additional fine amount will be collected.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <BookingForm 
+            spot={selectedSpot} 
+            onBookingDataChange={handleBookingDataChange}
+          />
         )}
         
         {/* Action Buttons */}
         <CardFooter className="flex flex-wrap gap-3 pt-0">
-          <Button 
-            variant="outline" 
-            className="flex-1 min-w-[120px]"
-            onClick={handleGetDirections}
-          >
-            Get Directions
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            className="flex-1 min-w-[120px]"
-            onClick={handleChatWithOwner}
-          >
-            <MessageCircle size={16} className="mr-1" />
-            Chat with Owner
-          </Button>
-          
-          {!isSpaceOwner && (
-            <Button 
-              className="flex-1 min-w-[120px] bg-primary hover:bg-primary/90"
-              onClick={handleBookNow}
-              disabled={isBooking && (!startDate || !startTime || !endDate || !endTime || totalCost === 0)}
-            >
-              {isBooking ? 'Confirm Booking' : 'Book Now'}
-            </Button>
-          )}
+          <ActionButtons 
+            onGetDirections={handleGetDirections}
+            onChatWithOwner={() => setShowChatDialog(true)}
+            onBookNow={handleBookNow}
+            isBooking={isBooking}
+            isBookingDisabled={!startDate || !startTime || !endDate || !endTime || totalCost === 0}
+            isSpaceOwner={isSpaceOwner}
+          />
         </CardFooter>
       </DialogContent>
       
       {/* Chat Dialog */}
-      <AlertDialog open={showChatDialog} onOpenChange={setShowChatDialog}>
-        <AlertDialogContent className="max-w-md w-[95vw] md:w-auto">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Chat with {selectedSpot.name} Owner</AlertDialogTitle>
-            <AlertDialogDescription>
-              Send a message to the spot owner. They will respond to your inquiries shortly.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="border rounded-md p-4 bg-gray-50 h-40 overflow-y-auto">
-              <p className="text-sm text-gray-500 italic">Start a conversation with the spot owner...</p>
-            </div>
-            
-            <div className="flex gap-2">
-              <Input 
-                placeholder="Type your message..." 
-                value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={handleSendMessage} disabled={!chatMessage.trim()}>
-                Send
-              </Button>
-            </div>
-          </div>
-          
-          <AlertDialogFooter>
-            <AlertDialogCancel>Close</AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ChatDialog 
+        open={showChatDialog} 
+        onOpenChange={setShowChatDialog}
+        spotName={selectedSpot.name}
+      />
     </Dialog>
   );
 };

@@ -9,25 +9,6 @@ export interface ReviewProps {
   spotId: string;
 }
 
-interface Review {
-  id: string;
-  spotId: string;
-  userId: string;
-  userName: string;
-  rating: number;
-  comment: string;
-  date: Date;
-  attributes: {
-    isRealImage: boolean;
-    isSpaceAccurate: boolean;
-    isOwnerResponsive: boolean;
-    isSafeParking: boolean;
-    hasGoodLighting: boolean;
-    isClean: boolean;
-    isPaved: boolean;
-  };
-}
-
 const Reviews: React.FC<ReviewProps> = ({ spotId }) => {
   const { getSpotReviews } = useApp();
   const reviews = getSpotReviews(spotId);

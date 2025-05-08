@@ -40,6 +40,26 @@ export interface Booking {
   status: BookingStatus;
   totalCost: number;
   createdAt: Date;
+  hasReview?: boolean; // Added hasReview field
+}
+
+export interface Review {
+  id: string;
+  spotId: string;
+  userId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  date: Date;
+  attributes: {
+    isRealImage: boolean;
+    isSpaceAccurate: boolean;
+    isOwnerResponsive: boolean;
+    isSafeParking: boolean;
+    hasGoodLighting: boolean;
+    isClean: boolean;
+    isPaved: boolean;
+  };
 }
 
 interface AppContextType {
@@ -65,6 +85,8 @@ interface AppContextType {
   toggleListView: () => void;
   mySpots: ParkingSpot[];
   deleteSpot: (spotId: string) => void;
+  getSpotReviews: (spotId: string) => Review[]; // Added getSpotReviews
+  submitReview: (review: Omit<Review, 'id' | 'date'>) => void; // Added submitReview
 }
 
 // Dummy data for parking spots in Bangalore
@@ -141,7 +163,7 @@ const generateDummyParkingSpots = (): ParkingSpot[] => {
       images: [
         'https://images.unsplash.com/photo-1553413077-190dd305871c?q=80&w=400',
         'https://images.unsplash.com/photo-1611192052550-32918395b8c6?q=80&w=400',
-        'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?q=80&w=400'
+        'https://images.unsplash.com/photo-1470224114660-3f6686c562eb?q=80&w=400'
       ],
       availability: {
         startDate: new Date(),
@@ -215,6 +237,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedSpot, setSelectedSpot] = useState<ParkingSpot | null>(null);
   const [showListView, setShowListView] = useState<boolean>(false);
   const [earnings, setEarnings] = useState<number>(1250); // Dummy earnings
+  const [reviews, setReviews] = useState<Review[]>([]); // Added reviews state
   const [filters, setFilters] = useState({
     search: '',
     vehicleType: null as VehicleType | null,
@@ -358,6 +381,80 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toast.info("Document uploaded! Verification in progress.");
   };
 
+  // Get reviews for a specific spot
+  const getSpotReviews = (spotId: string): Review[] => {
+    // Return reviews for the specific spot or empty array if none
+    const spotReviews = reviews.filter(review => review.spotId === spotId);
+    
+    // If no reviews exist, create some dummy reviews for demo purposes
+    if (spotReviews.length === 0) {
+      const dummyReviews = [
+        {
+          id: `review-${spotId}-1`,
+          spotId: spotId,
+          userId: 'user1',
+          userName: 'John Doe',
+          rating: 4.5,
+          comment: 'Great parking spot, very convenient location and well maintained.',
+          date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+          attributes: {
+            isRealImage: true,
+            isSpaceAccurate: true,
+            isOwnerResponsive: true,
+            isSafeParking: true,
+            hasGoodLighting: true,
+            isClean: true,
+            isPaved: true
+          }
+        },
+        {
+          id: `review-${spotId}-2`,
+          spotId: spotId,
+          userId: 'user2',
+          userName: 'Jane Smith',
+          rating: 3.5,
+          comment: 'Decent spot, but lighting could be better at night.',
+          date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
+          attributes: {
+            isRealImage: true,
+            isSpaceAccurate: true,
+            isOwnerResponsive: false,
+            isSafeParking: true,
+            hasGoodLighting: false,
+            isClean: true,
+            isPaved: false
+          }
+        }
+      ];
+      
+      return dummyReviews;
+    }
+    
+    return spotReviews;
+  };
+  
+  // Submit a new review
+  const submitReview = (reviewData: Omit<Review, 'id' | 'date'>) => {
+    const newReview: Review = {
+      ...reviewData,
+      id: `review-${Date.now()}`,
+      date: new Date()
+    };
+    
+    setReviews(prev => [...prev, newReview]);
+    
+    // Mark the booking as having a review
+    setMyBookings(prev => 
+      prev.map(booking => 
+        booking.spotId === reviewData.spotId && booking.userId === reviewData.userId
+          ? { ...booking, hasReview: true }
+          : booking
+      )
+    );
+    
+    toast.success("Review submitted successfully!");
+  };
+
   return (
     <AppContext.Provider value={{
       parkingSpots,
@@ -376,7 +473,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       showListView,
       toggleListView,
       mySpots,
-      deleteSpot
+      deleteSpot,
+      getSpotReviews,
+      submitReview
     }}>
       {children}
     </AppContext.Provider>
