@@ -20,7 +20,7 @@ const queryClient = new QueryClient();
 
 // Protected route wrapper
 const ProtectedRoute = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
   
   // While checking auth status, show nothing
@@ -31,6 +31,11 @@ const ProtectedRoute = () => {
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  
+  // If admin tries to access non-admin routes, redirect to admin page
+  if (user?.role === 'admin' && !location.pathname.startsWith('/admin')) {
+    return <Navigate to="/admin" replace />;
   }
   
   // If authenticated, render the child routes
@@ -66,6 +71,7 @@ const AppRoutes = () => {
       {/* Admin routes */}
       <Route element={<AdminRoute />}>
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin/*" element={<AdminPage />} />
       </Route>
       
       {/* Protected routes */}

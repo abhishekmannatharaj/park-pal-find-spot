@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const SignupForm: React.FC = () => {
@@ -14,28 +13,36 @@ const SignupForm: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !email || !password || !phone) {
-      toast.error("Please fill all required fields");
+    // Basic validation
+    if (!name || !email || !password || !confirmPassword || !phone) {
+      toast.error("Please fill out all fields");
       return;
     }
     
     if (password !== confirmPassword) {
-      toast.error("Passwords don't match");
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    // Basic phone validation
+    if (!/^[0-9]{10}$/.test(phone)) {
+      toast.error("Please enter a valid 10-digit phone number");
       return;
     }
     
     try {
       setIsLoading(true);
-      // For this demo, we're just using the login function
-      await login(email, password);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       toast.success("Account created successfully!");
-      navigate('/map');
+      navigate('/login');
     } catch (error) {
       console.error("Signup error:", error);
       toast.error("Failed to create account. Please try again.");
@@ -47,9 +54,9 @@ const SignupForm: React.FC = () => {
   return (
     <Card className="w-full max-w-md mx-auto shadow-lg">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">Sign Up</CardTitle>
         <CardDescription className="text-center">
-          Enter your details to create a Nexlot account
+          Create an account to start using Nexlot
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -103,7 +110,7 @@ const SignupForm: React.FC = () => {
             className="w-full bg-primary hover:bg-primary/90"
             disabled={isLoading}
           >
-            {isLoading ? "Creating Account..." : "Sign Up"}
+            {isLoading ? "Creating Account..." : "Create Account"}
           </Button>
         </form>
       </CardContent>

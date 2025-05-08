@@ -19,6 +19,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   switchRole: (role: UserRole) => void;
+  canSwitchRole: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -80,9 +81,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  // Check if user can switch roles (admin cannot switch roles)
+  const canSwitchRole = () => {
+    return user && user.role !== 'admin';
+  };
+
   // Switch role function
   const switchRole = (role: UserRole) => {
-    if (user) {
+    if (user && user.role !== 'admin') {
       const updatedUser = { ...user, role };
       localStorage.setItem('nexlot_user', JSON.stringify(updatedUser));
       setUser(updatedUser);
@@ -96,7 +102,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isLoading,
       login,
       logout,
-      switchRole
+      switchRole,
+      canSwitchRole
     }}>
       {children}
     </AuthContext.Provider>

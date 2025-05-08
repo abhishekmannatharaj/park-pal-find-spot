@@ -27,7 +27,7 @@ const LoginForm: React.FC = () => {
       await login(email, password);
       toast.success("Login successful!");
       
-      // Redirect based on credentials
+      // Redirect based on credentials - admin goes to admin page only
       if (email.toLowerCase() === 'admin' && password === 'admin') {
         navigate('/admin');
       } else {
