@@ -26,7 +26,13 @@ const LoginForm: React.FC = () => {
       setIsLoading(true);
       await login(email, password);
       toast.success("Login successful!");
-      navigate('/map');
+      
+      // Redirect based on credentials
+      if (email.toLowerCase() === 'admin' && password === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/map');
+      }
     } catch (error) {
       console.error("Login error:", error);
       toast.error("Failed to login. Please try again.");
@@ -47,8 +53,8 @@ const LoginForm: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Input
-              type="email"
-              placeholder="Email"
+              type="text"
+              placeholder="Email or Username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required

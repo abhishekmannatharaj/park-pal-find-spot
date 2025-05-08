@@ -1,7 +1,7 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
-export type UserRole = 'vehicle_owner' | 'space_owner';
+export type UserRole = 'vehicle_owner' | 'space_owner' | 'admin';
 
 interface User {
   id: string;
@@ -36,10 +36,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  // Dummy login function
+  // Login function with admin check
   const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
-    // Simulate API call
+    
+    // Check for admin credentials
+    if (email.toLowerCase() === 'admin' && password === 'admin') {
+      const adminUser: User = {
+        id: 'admin-id',
+        email: 'admin@nexlot.app',
+        name: 'Admin',
+        role: 'admin',
+        isVerified: true,
+      };
+      
+      localStorage.setItem('nexlot_user', JSON.stringify(adminUser));
+      setUser(adminUser);
+      setIsLoading(false);
+      return;
+    }
+    
+    // Regular user login (simulate API call)
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Create dummy user

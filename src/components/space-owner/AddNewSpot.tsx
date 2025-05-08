@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,43 +17,7 @@ import { useApp, VehicleType } from '@/context/AppContext';
 import GoogleMap from '@/components/map/GoogleMap';
 import { toast } from 'sonner';
 import { Trash, Upload, Cctv, Search } from 'lucide-react';
-
-// Mock AI analysis function
-const analyzeSpot = () => {
-  const safety = Math.floor(Math.random() * 3) + 3; // Random number between 3-5
-  const pros = [
-    'Well-lit area',
-    '24/7 security cameras',
-    'Easy access from main road',
-    'Good visibility from surroundings',
-    'Weather protected'
-  ];
-  const cons = [
-    'Limited entrance/exit points',
-    'Narrow parking spaces',
-    'Limited operational hours',
-    'No covered parking',
-    'Distance from public transportation'
-  ];
-  
-  // Randomly select 2-3 pros and 1-2 cons
-  const selectedPros = [...pros].sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 2) + 2);
-  const selectedCons = [...cons].sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 2) + 1);
-  
-  // Generate random tags
-  const allTags = ['Indoor', 'Outdoor', 'Covered', 'Uncovered', 'Safe', 'Well-lit', 'CCTV', 'Security'];
-  const selectedTags = [...allTags].sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 3) + 2);
-  
-  return {
-    safety,
-    tags: selectedTags,
-    analysis: {
-      pros: selectedPros,
-      cons: selectedCons,
-      summary: `This parking spot has a safety rating of ${safety}/5. It's ${safety >= 4 ? 'generally safe' : 'moderately safe'} for parking.`
-    }
-  };
-};
+import { analyzeSpotImages, SpotAnalysisResult } from '@/utils/geminiAnalysis';
 
 const AddNewSpot: React.FC = () => {
   const { addNewSpot } = useApp();
@@ -70,10 +34,12 @@ const AddNewSpot: React.FC = () => {
   const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
   const [photos, setPhotos] = useState<{id: string, src: string}[]>([]);
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const [analysis, setAnalysis] = useState<any>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<SpotAnalysisResult | null>(null);
   const [step, setStep] = useState(1);
   const [hasCctv, setHasCctv] = useState(false);
   const [hasLiveAccess, setHasLiveAccess] = useState(false);
+  const [appealRequested, setAppealRequested] = useState(false);
   
   // Handle vehicle type selection
   const handleVehicleTypeChange = (type: VehicleType) => {
@@ -188,7 +154,7 @@ const AddNewSpot: React.FC = () => {
       address,
       location: location || { lat: 12.9716, lng: 77.5946 },
       price,
-      rating: analysis ? analysis.safety : 0,
+      rating: analysis ? analysis.rating : 0,
       vehicleTypes,
       images: photos.map(photo => photo.src),
       availability: {
@@ -218,19 +184,35 @@ const AddNewSpot: React.FC = () => {
     setAnalysis(null);
     setHasCctv(false);
     setHasLiveAccess(false);
+    setAppealRequested(false);
   };
   
-  // Handle analyze
-  const handleAnalyze = () => {
-    const result = analyzeSpot();
-    setAnalysis(result);
-    setShowAnalysis(true);
+  // Handle analyze with Gemini API
+  const handleAnalyze = async () => {
+    if (photos.length !== 3) {
+      toast.error("Please upload all 3 photos before analyzing");
+      return;
+    }
+    
+    setAnalyzing(true);
+    
+    try {
+      // Pass photo URLs to the Gemini API
+      const result = await analyzeSpotImages(photos.map(photo => photo.src));
+      setAnalysis(result);
+      setShowAnalysis(true);
+    } catch (error) {
+      console.error("Analysis error:", error);
+      toast.error("Failed to analyze images. Please try again.");
+    } finally {
+      setAnalyzing(false);
+    }
   };
   
-  // Handle manual review
+  // Handle manual review appeal
   const handleManualReview = () => {
-    toast.success("Applied for manual analysis");
-    // In a real app, this would send a request for manual review
+    setAppealRequested(true);
+    toast.success("Manual analysis request submitted");
   };
   
   const handleCctvChange = (checked: boolean) => {
@@ -597,9 +579,10 @@ const AddNewSpot: React.FC = () => {
                   variant="outline"
                   className="w-full"
                   onClick={handleAnalyze}
+                  disabled={analyzing}
                   type="button"
                 >
-                  Analyze Spot
+                  {analyzing ? "Analyzing..." : "Analyze Spot"}
                 </Button>
               )}
               
@@ -613,7 +596,7 @@ const AddNewSpot: React.FC = () => {
                         <svg
                           key={star}
                           className={`w-5 h-5 ${
-                            star <= analysis.safety ? 'text-yellow-400' : 'text-gray-300'
+                            star <= analysis.rating ? 'text-yellow-400' : 'text-gray-300'
                           }`}
                           fill="currentColor"
                           viewBox="0 0 20 20"
@@ -623,7 +606,7 @@ const AddNewSpot: React.FC = () => {
                       ))}
                     </div>
                     
-                    <p className="text-sm text-gray-600 mb-3">{analysis.analysis.summary}</p>
+                    <p className="text-sm text-gray-600 mb-3">{analysis.summary}</p>
                     
                     {/* Tags */}
                     <div className="flex flex-wrap gap-2 mb-3">
@@ -635,22 +618,22 @@ const AddNewSpot: React.FC = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      {analysis.analysis.pros.length > 0 && (
+                      {analysis.pros.length > 0 && (
                         <div>
                           <h4 className="text-sm font-medium text-green-600">Pros:</h4>
                           <ul className="list-disc list-inside text-sm pl-2">
-                            {analysis.analysis.pros.map((pro: string, i: number) => (
+                            {analysis.pros.map((pro: string, i: number) => (
                               <li key={i} className="text-gray-600">{pro}</li>
                             ))}
                           </ul>
                         </div>
                       )}
                       
-                      {analysis.analysis.cons.length > 0 && (
+                      {analysis.cons.length > 0 && (
                         <div>
                           <h4 className="text-sm font-medium text-red-600">Cons:</h4>
                           <ul className="list-disc list-inside text-sm pl-2">
-                            {analysis.analysis.cons.map((con: string, i: number) => (
+                            {analysis.cons.map((con: string, i: number) => (
                               <li key={i} className="text-gray-600">{con}</li>
                             ))}
                           </ul>
@@ -658,14 +641,22 @@ const AddNewSpot: React.FC = () => {
                       )}
                     </div>
                     
-                    <Button
-                      variant="outline"
-                      className="mt-4 w-full"
-                      onClick={handleManualReview}
-                    >
-                      <Search size={16} className="mr-1" />
-                      Appeal for Manual Analysis
-                    </Button>
+                    {!appealRequested && (
+                      <Button
+                        variant="outline"
+                        className="mt-4 w-full"
+                        onClick={handleManualReview}
+                      >
+                        <Search size={16} className="mr-1" />
+                        Appeal for Manual Analysis
+                      </Button>
+                    )}
+
+                    {appealRequested && (
+                      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-sm">
+                        Manual analysis request submitted. Our team will review your spot.
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
