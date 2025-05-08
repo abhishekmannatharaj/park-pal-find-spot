@@ -6,7 +6,6 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useApp } from '@/context/AppContext';
 import { toast } from "sonner";
@@ -53,18 +52,19 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, spotId, onSucces
   
   const onSubmit = (data: FeedbackFormValues) => {
     submitReview({
-      bookingId,
       spotId,
+      userId: '1',  // Assuming current user's ID
+      userName: 'Current User', // Assuming current user's name
       rating: data.rating,
       comment: data.comment,
       attributes: {
-        isRealImage: data.isRealImage,
-        isSpaceAccurate: data.isSpaceAccurate, 
-        isOwnerResponsive: data.isOwnerResponsive,
-        isSafeParking: data.isSafeParking,
-        hasGoodLighting: data.hasGoodLighting,
-        isClean: data.isClean,
-        isPaved: data.isPaved,
+        isRealImage: data.isRealImage || false,
+        isSpaceAccurate: data.isSpaceAccurate || false,
+        isOwnerResponsive: data.isOwnerResponsive || false,
+        isSafeParking: data.isSafeParking || false,
+        hasGoodLighting: data.hasGoodLighting || false,
+        isClean: data.isClean || false,
+        isPaved: data.isPaved || false,
       }
     });
     
