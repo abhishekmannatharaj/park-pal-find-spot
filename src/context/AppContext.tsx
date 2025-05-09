@@ -228,6 +228,111 @@ const generateDummyParkingSpots = (): ParkingSpot[] => {
   ];
 };
 
+// Generate dummy bookings data
+const generateDummyBookings = (spots: ParkingSpot[]): Booking[] => {
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  
+  const twoDaysAgo = new Date(now);
+  twoDaysAgo.setDate(now.getDate() - 2);
+  
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  
+  const dayAfterTomorrow = new Date(now);
+  dayAfterTomorrow.setDate(now.getDate() + 2);
+  
+  const nextWeek = new Date(now);
+  nextWeek.setDate(now.getDate() + 7);
+  
+  return [
+    // Upcoming bookings (approved and in the future)
+    {
+      id: "booking-1",
+      spotId: spots[0].id,
+      spot: spots[0],
+      userId: "1",
+      startTime: tomorrow,
+      endTime: dayAfterTomorrow,
+      status: "approved",
+      totalCost: 960,
+      createdAt: yesterday,
+    },
+    {
+      id: "booking-2",
+      spotId: spots[2].id,
+      spot: spots[2],
+      userId: "1",
+      startTime: dayAfterTomorrow,
+      endTime: nextWeek,
+      status: "approved",
+      totalCost: 3600,
+      createdAt: yesterday,
+    },
+    
+    // Pending bookings (waiting for approval)
+    {
+      id: "booking-3",
+      spotId: spots[1].id,
+      spot: spots[1],
+      userId: "1",
+      startTime: tomorrow,
+      endTime: dayAfterTomorrow,
+      status: "pending",
+      totalCost: 1200,
+      createdAt: now,
+    },
+    {
+      id: "booking-4",
+      spotId: spots[4].id,
+      spot: spots[4],
+      userId: "1",
+      startTime: nextWeek,
+      endTime: new Date(nextWeek.getTime() + 48 * 60 * 60 * 1000),
+      status: "pending",
+      totalCost: 2160,
+      createdAt: now,
+    },
+    
+    // Past bookings (completed or approved but in the past)
+    {
+      id: "booking-5",
+      spotId: spots[3].id,
+      spot: spots[3],
+      userId: "1",
+      startTime: twoDaysAgo,
+      endTime: yesterday,
+      status: "approved",
+      totalCost: 720,
+      createdAt: new Date(twoDaysAgo.getTime() - 24 * 60 * 60 * 1000),
+    },
+    {
+      id: "booking-6",
+      spotId: spots[0].id,
+      spot: spots[0],
+      userId: "1",
+      startTime: new Date(twoDaysAgo.getTime() - 48 * 60 * 60 * 1000),
+      endTime: twoDaysAgo,
+      status: "completed",
+      totalCost: 960,
+      createdAt: new Date(twoDaysAgo.getTime() - 72 * 60 * 60 * 1000),
+      hasReview: true,
+    },
+    {
+      id: "booking-7",
+      spotId: spots[2].id,
+      spot: spots[2],
+      userId: "1",
+      startTime: new Date(twoDaysAgo.getTime() - 96 * 60 * 60 * 1000),
+      endTime: new Date(twoDaysAgo.getTime() - 48 * 60 * 60 * 1000),
+      status: "completed",
+      totalCost: 2880,
+      createdAt: new Date(twoDaysAgo.getTime() - 120 * 60 * 60 * 1000),
+    },
+  ];
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -454,6 +559,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     toast.success("Review submitted successfully!");
   };
+
+  // Initialize dummy bookings
+  useEffect(() => {
+    setMyBookings(generateDummyBookings(parkingSpots));
+  }, [parkingSpots]);
 
   return (
     <AppContext.Provider value={{
