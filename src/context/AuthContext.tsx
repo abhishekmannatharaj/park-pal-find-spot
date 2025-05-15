@@ -5,6 +5,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
 export type UserRole = 'vehicle_owner' | 'space_owner' | 'admin';
+export type VerificationStatus = 'pending' | 'approved' | 'rejected' | null;
 
 interface Profile {
   id: string;
@@ -12,6 +13,7 @@ interface Profile {
   email: string;
   role: UserRole;
   avatar_url?: string;
+  verificationStatus?: VerificationStatus;
 }
 
 interface AuthContextType {

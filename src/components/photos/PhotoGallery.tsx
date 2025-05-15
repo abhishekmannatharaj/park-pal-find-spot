@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getUserPhotos, PhotoType, deletePhoto } from '@/services/UserPhotoService';
+import { getUserPhotos, Photo, deletePhoto } from '@/services/UserPhotoService';
 import { useAuth } from '@/context/AuthContext';
 import { Trash, ImageOff } from 'lucide-react';
 import { 
@@ -28,9 +27,9 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   title = "Photo Gallery" 
 }) => {
   const { user } = useAuth();
-  const [photos, setPhotos] = useState<PhotoType[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedPhoto, setSelectedPhoto] = useState<PhotoType | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
@@ -59,7 +58,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
     fetchPhotos();
   }, [user, userId, spotId]);
   
-  const handleDeleteClick = (photo: PhotoType) => {
+  const handleDeleteClick = (photo: Photo) => {
     setSelectedPhoto(photo);
     setShowDeleteDialog(true);
   };

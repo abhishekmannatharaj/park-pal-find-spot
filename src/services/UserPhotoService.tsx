@@ -49,6 +49,9 @@ export const uploadPhoto = async (
       throw new Error('Failed to get public URL for uploaded file');
     }
     
+    // Convert metadata to a plain object for database storage
+    const metadataObject = metadata ? { ...metadata } : undefined;
+    
     // Insert record in photos table
     const { data: photo, error: dbError } = await supabase
       .from('photos')
@@ -56,7 +59,7 @@ export const uploadPhoto = async (
         user_id: userId,
         url: data.publicUrl,
         spot_id: spotId,
-        metadata
+        metadata: metadataObject
       })
       .select()
       .single();
