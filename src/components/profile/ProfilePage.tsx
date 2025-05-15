@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { LogOut, Images } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 
 // Import new components
 import ProfileHeader from './ProfileHeader';
@@ -13,7 +13,6 @@ import VerificationStatus from './VerificationStatus';
 import DocumentUploader from './DocumentUploader';
 import ManualReviewDialog from './ManualReviewDialog';
 import LogoutConfirmDialog from './LogoutConfirmDialog';
-import PhotosDialog from './PhotosDialog';
 
 const ProfilePage: React.FC = () => {
   const { user, profile, logout, switchRole, uploadAvatar } = useAuth();
@@ -21,7 +20,6 @@ const ProfilePage: React.FC = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
   const [showManualReviewDialog, setShowManualReviewDialog] = useState(false);
-  const [showPhotosDialog, setShowPhotosDialog] = useState(false);
   
   const handleRoleChange = async (checked: boolean) => {
     const newRole = checked ? 'vehicle_owner' : 'space_owner';
@@ -70,16 +68,6 @@ const ProfilePage: React.FC = () => {
                 onManualReview={() => setShowManualReviewDialog(true)}
               />
             )}
-
-            {/* Photo Management Button */}
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => setShowPhotosDialog(true)}
-            >
-              <Images size={16} className="mr-2" />
-              Manage Photos
-            </Button>
             
             {/* Logout Button */}
             <Button 
@@ -109,11 +97,6 @@ const ProfilePage: React.FC = () => {
       <ManualReviewDialog
         isOpen={showManualReviewDialog}
         onClose={() => setShowManualReviewDialog(false)}
-      />
-      
-      <PhotosDialog
-        isOpen={showPhotosDialog}
-        onClose={() => setShowPhotosDialog(false)}
       />
     </div>
   );
