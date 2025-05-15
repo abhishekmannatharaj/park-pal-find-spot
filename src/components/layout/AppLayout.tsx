@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, BookOpen, List, User } from 'lucide-react';
+import { Home, BookOpen, List, User, Camera } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 interface AppLayoutProps {
@@ -9,7 +9,7 @@ interface AppLayoutProps {
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -20,7 +20,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const navItems = [
     { path: '/map', label: 'Home', icon: Home },
     { path: '/bookings', label: 'Bookings', icon: BookOpen },
-    ...(user?.role === 'space_owner' ? [{ path: '/spots', label: 'Spots', icon: List }] : []),
+    ...(profile?.role === 'space_owner' ? [{ path: '/spots', label: 'Spots', icon: List }] : []),
+    { path: '/photos', label: 'Photos', icon: Camera },
     { path: '/profile', label: 'Profile', icon: User },
   ];
 
@@ -30,15 +31,19 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         {children}
       </main>
       
-      <nav className="bottom-nav shadow-lg">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center p-2 z-10">
         {navItems.map((item) => (
           <button
             key={item.path}
-            className={`bottom-nav-icon ${isActive(item.path) ? 'active' : ''}`}
+            className={`flex flex-col items-center p-2 ${
+              isActive(item.path)
+                ? 'text-primary'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
             onClick={() => navigate(item.path)}
           >
             <item.icon size={20} />
-            <span>{item.label}</span>
+            <span className="text-xs mt-1">{item.label}</span>
           </button>
         ))}
       </nav>

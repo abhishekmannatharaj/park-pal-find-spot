@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,11 +18,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
 import { useAuth, UserRole } from '@/context/AuthContext';
-import { Upload, LogOut, Trash, FileText, FileCheck, FileSearch } from 'lucide-react';
+import { Upload, LogOut, Trash, FileText, FileCheck, FileSearch, ImagePlus, Images } from 'lucide-react';
+import { getUserPhotos, uploadPhoto, PhotoMetadata, Photo as PhotoType, deletePhoto } from '@/services/UserPhotoService';
 
 const ProfilePage: React.FC = () => {
-  const { user, logout, switchRole } = useAuth();
-  const [isVehicleOwner, setIsVehicleOwner] = useState(user?.role === 'vehicle_owner');
+  const { user, profile, logout, switchRole, uploadAvatar } = useAuth();
+  const [isVehicleOwner, setIsVehicleOwner] = useState(profile?.role === 'vehicle_owner');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
   const [uploadedDocument, setUploadedDocument] = useState<File | null>(null);
@@ -31,40 +32,68 @@ const ProfilePage: React.FC = () => {
   const [agreementPreview, setAgreementPreview] = useState<string | null>(null);
   const [verificationInProgress, setVerificationInProgress] = useState(false);
   const [showManualReviewDialog, setShowManualReviewDialog] = useState(false);
+  const [showPhotosDialog, setShowPhotosDialog] = useState(false);
+  const [userPhotos, setUserPhotos] = useState<PhotoType[]>([]);
+  const [isLoadingPhotos, setIsLoadingPhotos] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const agreementInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   
-  const handleRoleChange = (checked: boolean) => {
+  // Fetch user photos when dialog opens
+  useEffect(() => {
+    if (showPhotosDialog && user) {
+      const fetchPhotos = async () => {
+        setIsLoadingPhotos(true);
+        const photos = await getUserPhotos(user.id);
+        setUserPhotos(photos);
+        setIsLoadingPhotos(false);
+      };
+      
+      fetchPhotos();
+    }
+  }, [showPhotosDialog, user]);
+  
+  const handleRoleChange = async (checked: boolean) => {
     const newRole: UserRole = checked ? 'vehicle_owner' : 'space_owner';
     setIsVehicleOwner(checked);
-    switchRole(newRole);
-    toast.success(`Switched to ${checked ? 'Vehicle Owner' : 'Space Owner'} mode`);
+    await switchRole(newRole);
   };
   
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     toast.success('Logged out successfully');
   };
   
-  const handleUploadClick = (type: 'document' | 'agreement') => {
+  const handleUploadClick = (type: 'document' | 'agreement' | 'photo' | 'avatar') => {
     if (type === 'document' && fileInputRef.current) {
       fileInputRef.current.click();
     } else if (type === 'agreement' && agreementInputRef.current) {
       agreementInputRef.current.click();
+    } else if (type === 'photo' && photoInputRef.current) {
+      photoInputRef.current.click();
+    } else if (type === 'avatar' && avatarInputRef.current) {
+      avatarInputRef.current.click();
     }
   };
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'document' | 'agreement') => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'document' | 'agreement' | 'photo' | 'avatar') => {
     const file = e.target.files?.[0];
     if (file) {
       if (type === 'document') {
         setUploadedDocument(file);
         const previewUrl = URL.createObjectURL(file);
         setDocumentPreview(previewUrl);
-      } else {
+      } else if (type === 'agreement') {
         setUploadedAgreement(file);
         const previewUrl = URL.createObjectURL(file);
         setAgreementPreview(previewUrl);
+      } else if (type === 'avatar') {
+        setAvatarFile(file);
+        handleAvatarUpload(file);
+      } else if (type === 'photo') {
+        handlePhotoUpload(file);
       }
     }
   };
@@ -90,10 +119,9 @@ const ProfilePage: React.FC = () => {
       toast.error('Please upload both ID document and spot agreement');
       return;
     }
-    setVerificationInProgress(true); // Fixed this line - was missing parentheses
+    setVerificationInProgress(true);
     toast.success('Documents uploaded successfully! We will verify them shortly.');
     setShowVerificationDialog(false);
-    // In a real app, we would upload the file to a server
   };
   
   const handleManualReview = () => {
@@ -104,6 +132,44 @@ const ProfilePage: React.FC = () => {
     toast.success('Your request for manual review has been submitted');
     setShowManualReviewDialog(false);
   };
+  
+  const handleAvatarUpload = async (file: File) => {
+    if (!user) {
+      toast.error('You need to be logged in to upload an avatar');
+      return;
+    }
+    
+    const result = await uploadAvatar(file);
+    if (result) {
+      toast.success('Avatar updated successfully');
+    }
+  };
+  
+  const handlePhotoUpload = async (file: File) => {
+    if (!user) {
+      toast.error('You need to be logged in to upload a photo');
+      return;
+    }
+    
+    const metadata: PhotoMetadata = {
+      description: 'Photo uploaded from profile page',
+      tags: ['profile']
+    };
+    
+    const photo = await uploadPhoto(file, user.id, undefined, metadata);
+    
+    if (photo) {
+      setUserPhotos(prev => [photo, ...prev]);
+    }
+  };
+  
+  const handleDeletePhoto = async (photoId: string) => {
+    const success = await deletePhoto(photoId);
+    
+    if (success) {
+      setUserPhotos(prev => prev.filter(p => p.id !== photoId));
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -112,14 +178,31 @@ const ProfilePage: React.FC = () => {
           <CardTitle>Profile</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center space-y-4">
-          <Avatar className="h-24 w-24">
-            <AvatarImage src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150" alt={user?.name || "User"} />
-            <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="h-24 w-24">
+              <AvatarImage src={profile?.avatar_url || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150"} alt={profile?.name || "User"} />
+              <AvatarFallback>{profile?.name?.charAt(0) || "U"}</AvatarFallback>
+            </Avatar>
+            <Button 
+              variant="secondary" 
+              size="icon"
+              className="absolute bottom-0 right-0 rounded-full h-8 w-8 p-1 shadow-md"
+              onClick={() => handleUploadClick('avatar')}
+            >
+              <ImagePlus size={16} />
+              <input
+                type="file"
+                ref={avatarInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={(e) => handleFileChange(e, 'avatar')}
+              />
+            </Button>
+          </div>
           
           <div className="text-center">
-            <h2 className="text-xl font-bold">{user?.name || "User"}</h2>
-            <p className="text-gray-500">{user?.email}</p>
+            <h2 className="text-xl font-bold">{profile?.name || "User"}</h2>
+            <p className="text-gray-500">{profile?.email}</p>
           </div>
           
           <div className="w-full space-y-4">
@@ -141,18 +224,18 @@ const ProfilePage: React.FC = () => {
                 <Label>Verification Status</Label>
                 <div className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
                   <div>
-                    {user?.verificationStatus ? (
+                    {profile?.verificationStatus ? (
                       <div className="flex items-center">
                         <span className={`text-sm mr-2 ${
-                          user.verificationStatus === 'approved' ? 'text-green-600' :
-                          user.verificationStatus === 'rejected' ? 'text-red-600' :
+                          profile.verificationStatus === 'approved' ? 'text-green-600' :
+                          profile.verificationStatus === 'rejected' ? 'text-red-600' :
                           'text-yellow-600'
                         }`}>
-                          {user.verificationStatus.charAt(0).toUpperCase() + user.verificationStatus.slice(1)}
+                          {profile.verificationStatus.charAt(0).toUpperCase() + profile.verificationStatus.slice(1)}
                         </span>
-                        {user.verificationStatus === 'approved' && <span className="text-green-600">✓</span>}
-                        {user.verificationStatus === 'rejected' && <span className="text-red-600">✕</span>}
-                        {user.verificationStatus === 'pending' && (
+                        {profile.verificationStatus === 'approved' && <span className="text-green-600">✓</span>}
+                        {profile.verificationStatus === 'rejected' && <span className="text-red-600">✕</span>}
+                        {profile.verificationStatus === 'pending' && (
                           <div className="flex space-x-2">
                             <span className="text-yellow-600">⏳</span>
                             <Button 
@@ -184,6 +267,15 @@ const ProfilePage: React.FC = () => {
                 </div>
               </div>
             )}
+
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => setShowPhotosDialog(true)}
+            >
+              <Images size={16} className="mr-2" />
+              Manage Photos
+            </Button>
             
             <Button 
               variant="destructive" 
@@ -197,6 +289,7 @@ const ProfilePage: React.FC = () => {
         </CardContent>
       </Card>
       
+      {/* Logout Confirmation Dialog */}
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -214,6 +307,7 @@ const ProfilePage: React.FC = () => {
         </AlertDialogContent>
       </AlertDialog>
       
+      {/* Document Verification Dialog */}
       <AlertDialog open={showVerificationDialog} onOpenChange={setShowVerificationDialog}>
         <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
           <AlertDialogHeader>
@@ -340,6 +434,7 @@ const ProfilePage: React.FC = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Manual Review Dialog */}
       <AlertDialog open={showManualReviewDialog} onOpenChange={setShowManualReviewDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -354,6 +449,81 @@ const ProfilePage: React.FC = () => {
             <AlertDialogAction onClick={handleSubmitManualReview}>
               Submit Request
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Photos Management Dialog */}
+      <AlertDialog open={showPhotosDialog} onOpenChange={setShowPhotosDialog}>
+        <AlertDialogContent className="max-h-[90vh] overflow-y-auto max-w-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Manage Photos</AlertDialogTitle>
+            <AlertDialogDescription>
+              Upload and manage your photos
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4 space-y-4">
+            <Button 
+              variant="outline" 
+              className="w-full border-dashed flex items-center justify-center p-6"
+              onClick={() => handleUploadClick('photo')}
+            >
+              <div className="flex flex-col items-center">
+                <Upload size={24} className="mb-2" />
+                <span>Upload New Photo</span>
+                <span className="text-xs text-gray-500 mt-1">JPG, PNG or WebP</span>
+              </div>
+              <input 
+                type="file" 
+                ref={photoInputRef}
+                className="hidden" 
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => handleFileChange(e, 'photo')}
+              />
+            </Button>
+            
+            <div className="mt-4">
+              <h3 className="font-medium mb-2">Your Photos</h3>
+              
+              {isLoadingPhotos && (
+                <div className="text-center py-8">Loading...</div>
+              )}
+              
+              {!isLoadingPhotos && userPhotos.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  You haven't uploaded any photos yet
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-3">
+                {userPhotos.map(photo => (
+                  <div key={photo.id} className="relative group">
+                    <img 
+                      src={photo.url} 
+                      alt="User photo" 
+                      className="w-full h-40 object-cover rounded-md"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
+                      <Button 
+                        variant="destructive"
+                        size="sm"
+                        className="opacity-90"
+                        onClick={() => handleDeletePhoto(photo.id)}
+                      >
+                        <Trash size={16} className="mr-1" />
+                        Delete
+                      </Button>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500 truncate">
+                      {new Date(photo.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -13,6 +13,7 @@ import BookingsPage from "./pages/BookingsPage";
 import SpotsPage from "./pages/SpotsPage";
 import AddSpotPage from "./pages/AddSpotPage";
 import ProfilePage from "./pages/ProfilePage";
+import PhotosPage from "./pages/PhotosPage";
 import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
 
@@ -81,6 +82,7 @@ const AppRoutes = () => {
         <Route path="/spots" element={<SpotsPage />} />
         <Route path="/add-spot" element={<AddSpotPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/photos" element={<PhotosPage />} />
       </Route>
       
       <Route path="*" element={<NotFound />} />

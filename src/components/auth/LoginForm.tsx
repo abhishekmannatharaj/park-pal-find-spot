@@ -25,7 +25,6 @@ const LoginForm: React.FC = () => {
     try {
       setIsLoading(true);
       await login(email, password);
-      toast.success("Login successful!");
       
       // Redirect based on credentials - admin goes to admin page only
       if (email.toLowerCase() === 'admin' && password === 'admin') {
@@ -35,7 +34,7 @@ const LoginForm: React.FC = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("Failed to login. Please try again.");
+      // Error handling is done within the login function
     } finally {
       setIsLoading(false);
     }

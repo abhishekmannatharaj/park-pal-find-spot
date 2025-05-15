@@ -5,6 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { UserRole } from '@/context/AuthContext';
 
 const SignupForm: React.FC = () => {
   const [name, setName] = useState('');
@@ -12,8 +16,10 @@ const SignupForm: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState<UserRole>('vehicle_owner');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { signup } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,15 +43,11 @@ const SignupForm: React.FC = () => {
     
     try {
       setIsLoading(true);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast.success("Account created successfully!");
+      await signup(email, password, name, role);
       navigate('/login');
     } catch (error) {
+      // Error handling is done in the signup function
       console.error("Signup error:", error);
-      toast.error("Failed to create account. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -105,6 +107,25 @@ const SignupForm: React.FC = () => {
               required
             />
           </div>
+          
+          <div className="space-y-3">
+            <Label>I am a:</Label>
+            <RadioGroup 
+              value={role} 
+              onValueChange={(value) => setRole(value as UserRole)}
+              className="flex space-x-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="vehicle_owner" id="vehicle_owner" />
+                <Label htmlFor="vehicle_owner">Vehicle Owner</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="space_owner" id="space_owner" />
+                <Label htmlFor="space_owner">Space Owner</Label>
+              </div>
+            </RadioGroup>
+          </div>
+          
           <Button 
             type="submit" 
             className="w-full bg-primary hover:bg-primary/90"
